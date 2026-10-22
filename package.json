@@ -1,0 +1,10 @@
+{
+  "name": "golden-blossom-pos",
+  "main": "index.html",
+  "window": {
+    "title": "Golden Blossom Boutique POS",
+    "width": 1280,
+    "height": 800,
+    "icon": "icon.png"
+  }
+}

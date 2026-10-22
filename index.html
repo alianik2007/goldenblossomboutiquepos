@@ -1,0 +1,2281 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Golden Blossom Boutique - POS & Inventory System</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        gold: {
+                            50: '#fffbf0',
+                            100: '#fef3c7',
+                            200: '#fde58a',
+                            300: '#fcd34d',
+                            400: '#fbbf24',
+                            500: '#d4af37',
+                            600: '#b8860b',
+                            700: '#92400e',
+                            800: '#78350f',
+                            900: '#451a03',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        brand: ['"Cinzel"', 'serif'],
+                        mono: ['"JetBrains Mono"', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- JsBarcode Library -->
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <!-- QRCode Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- SheetJS / XLSX for Smart Excel & CSV Import -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #020617;
+            color: #f8fafc;
+        }
+        .font-brand {
+            font-family: 'Cinzel', serif;
+        }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(212, 175, 55, 0.25);
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(212, 175, 55, 0.5);
+        }
+
+        /* PRINT STYLES - THERMAL BARCODE TAGS & 80MM / 58MM RECEIPT PRINTERS */
+        @media print {
+            html, body {
+                background: #ffffff !important;
+                color: #000000 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            body * {
+                visibility: hidden !important;
+            }
+            #printable-area, #printable-area * {
+                visibility: visible !important;
+            }
+            #printable-area {
+                position: absolute !important;
+                left: 0 !important;
+                top: 0 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                width: 100% !important;
+                background: #ffffff !important;
+                color: #000000 !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            @page {
+                size: auto;
+                margin: 0mm;
+            }
+        }
+
+        .gold-glow {
+            box-shadow: 0 0 25px -5px rgba(212, 175, 55, 0.25);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-gold-500 selection:text-slate-950">
+
+    <!-- TOP NOTIFICATION BANNER (TOAST) -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- HEADER / NAVIGATION -->
+    <header class="bg-slate-900/90 backdrop-blur-md border-b border-slate-800 sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Brand Title -->
+                <div class="flex items-center gap-3 cursor-pointer" onclick="switchTab('pos')">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-gold-600 via-gold-500 to-amber-300 flex items-center justify-center text-slate-950 font-bold text-xl shadow-lg shadow-gold-500/25">
+                        <span class="font-brand font-extrabold tracking-tight">GB</span>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h1 class="font-brand font-bold text-base sm:text-lg text-gold-400 tracking-wider">GOLDEN BLOSSOM</h1>
+                            <span class="text-[9px] bg-gold-500/10 text-gold-400 font-bold px-1.5 py-0.5 rounded border border-gold-500/30 uppercase tracking-widest">Haute Couture</span>
+                        </div>
+                        <p class="text-[10px] text-slate-400 uppercase tracking-widest font-medium">Boutique POS &amp; Inventory AI Suite</p>
+                    </div>
+                </div>
+
+                <!-- Navigation Tabs -->
+                <nav class="flex items-center gap-1 bg-slate-950/80 p-1 rounded-xl border border-slate-800">
+                    <button onclick="switchTab('pos')" id="tab-btn-pos" class="flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold transition-all bg-gold-500 text-slate-950 shadow-md">
+                        <i data-lucide="shopping-cart" class="w-4 h-4"></i>
+                        <span class="hidden sm:inline">Checkout</span><span>(POS)</span>
+                    </button>
+                    <button onclick="switchTab('inventory')" id="tab-btn-inventory" class="flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-200 transition-all">
+                        <i data-lucide="package" class="w-4 h-4"></i>
+                        <span>Inventory &amp; Stock</span>
+                    </button>
+                    <button onclick="switchTab('owner')" id="tab-btn-owner" class="flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-200 transition-all">
+                        <i data-lucide="shield" class="w-4 h-4 text-gold-400"></i>
+                        <span class="hidden sm:inline">Management</span><span>&amp; Security</span>
+                    </button>
+                </nav>
+
+                <!-- Active Staff Selector & Role Badge -->
+                <div class="flex items-center gap-2">
+                    <button onclick="openPinModal()" class="flex items-center gap-2.5 bg-slate-800 hover:bg-slate-700/80 px-3 py-1.5 rounded-xl border border-slate-700 transition-all group">
+                        <div class="relative flex items-center">
+                            <div class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></div>
+                        </div>
+                        <div class="text-left">
+                            <div class="flex items-center gap-1.5">
+                                <span id="current-user-display" class="text-xs font-semibold text-slate-200">Summer</span>
+                                <span id="current-user-role-badge" class="text-[9px] font-bold px-1.5 py-0.2 rounded uppercase tracking-wider bg-gold-500/20 text-gold-400 border border-gold-500/30">Owner</span>
+                            </div>
+                        </div>
+                        <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-400 group-hover:text-gold-400 transition-colors"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+
+        <!-- ================= POS VIEW ================= -->
+        <div id="view-pos" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <!-- Left Panel: Catalog Search, Barcode Quick Scan & Grid -->
+            <div class="lg:col-span-7 xl:col-span-8 space-y-4">
+                
+                <!-- Quick Barcode Scanner & Search Bar -->
+                <div class="bg-slate-900 border border-slate-800 p-3 rounded-2xl space-y-2">
+                    <div class="flex flex-col sm:flex-row gap-2">
+                        <!-- Search & Scanner Input -->
+                        <div class="relative flex-1">
+                            <i data-lucide="barcode" class="w-4 h-4 absolute left-3.5 top-3.5 text-gold-400"></i>
+                            <input type="text" id="pos-search-input" onkeyup="handleSearchOrScan(event)" placeholder="Scan barcode (scanner gun) or search product name / SKU..." class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-24 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-gold-500/70 transition-all placeholder:text-slate-500">
+                            <span class="absolute right-2.5 top-2.5 text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded font-mono">SCAN READY</span>
+                        </div>
+                        
+                        <!-- Category Filter -->
+                        <select id="pos-category-filter" onchange="renderCatalog()" class="bg-slate-950 border border-slate-800 text-xs text-slate-300 rounded-xl px-3 py-2.5 focus:outline-none focus:border-gold-500/50">
+                            <option value="ALL">✨ All Categories</option>
+                            <option value="Scarves">Scarves (Silk & Shawls)</option>
+                            <option value="Clothes">Clothes (Caftans & Dresses)</option>
+                            <option value="Boots">Boots & Shoes</option>
+                            <option value="Jewelry">Jewelry (Luxury Jewelry)</option>
+                            <option value="Accessories">Accessories (Bags & Belts)</option>
+                        </select>
+                    </div>
+
+                    <!-- Category Quick Badges -->
+                    <div id="quick-cat-badges" class="flex items-center gap-1.5 overflow-x-auto pb-1 text-[11px]">
+                        <!-- Injected dynamically -->
+                    </div>
+                </div>
+
+                <!-- Catalog Grid -->
+                <div id="catalog-grid" class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
+                    <!-- Products dynamically rendered -->
+                </div>
+            </div>
+
+            <!-- Right Panel: Cart, Totals & Receipt Checkout -->
+            <div class="lg:col-span-5 xl:col-span-4 bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between h-[calc(100vh-8.5rem)] sticky top-20 shadow-xl">
+                <div>
+                    <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+                        <div class="flex items-center gap-2">
+                            <div class="w-7 h-7 rounded-lg bg-gold-500/10 border border-gold-500/20 flex items-center justify-center text-gold-400">
+                                <i data-lucide="shopping-bag" class="w-4 h-4"></i>
+                            </div>
+                            <div>
+                                <h2 class="font-bold text-sm text-slate-100">Current Cart</h2>
+                                <span id="cart-item-count" class="text-[10px] text-slate-400">0 items</span>
+                            </div>
+                        </div>
+                        <button onclick="clearCart()" class="text-[11px] text-rose-400 hover:text-rose-300 font-medium px-2 py-1 rounded hover:bg-rose-500/10 transition-colors">Clear</button>
+                    </div>
+
+                    <!-- Cart List -->
+                    <div id="cart-list" class="divide-y divide-slate-800/60 max-h-[300px] overflow-y-auto my-2 pr-1">
+                        <!-- Injected dynamically -->
+                    </div>
+                </div>
+
+                <!-- Totals & Payment -->
+                <div class="space-y-3 pt-3 border-t border-slate-800 bg-slate-900">
+                    <div class="space-y-1.5 text-xs text-slate-400">
+                        <div class="flex justify-between">
+                            <span>Subtotal:</span>
+                            <span id="cart-subtotal" class="font-medium text-slate-200">0.00 MAD</span>
+                        </div>
+                        <div class="flex items-center justify-between gap-2">
+                            <label class="flex items-center gap-1 text-slate-400">
+                                <i data-lucide="percent" class="w-3 h-3 text-gold-400"></i> Discount (%):
+                            </label>
+                            <input type="number" id="cart-discount" min="0" max="100" value="0" oninput="updateCartTotals()" class="w-20 bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-right text-xs text-gold-400 font-bold focus:outline-none focus:border-gold-500/50">
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between items-baseline pt-2 border-t border-slate-800/80">
+                        <span class="text-xs font-bold text-slate-300">NET TOTAL:</span>
+                        <span id="cart-grand-total" class="text-2xl font-bold text-gold-400 tracking-tight">0.00 MAD</span>
+                    </div>
+
+                    <!-- Payment Mode Selection -->
+                    <div>
+                        <label class="text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-1 block">Payment Method</label>
+                        <div class="grid grid-cols-3 gap-2">
+                            <button onclick="setPaymentMethod('Cash')" id="pay-method-cash" class="py-2 text-[11px] font-semibold rounded-lg border border-gold-500/50 bg-gold-500/10 text-gold-400 flex items-center justify-center gap-1 transition-all">
+                                <i data-lucide="banknote" class="w-3.5 h-3.5"></i> Cash
+                            </button>
+                            <button onclick="setPaymentMethod('Card')" id="pay-method-card" class="py-2 text-[11px] font-semibold rounded-lg border border-slate-800 bg-slate-950 text-slate-400 flex items-center justify-center gap-1 transition-all">
+                                <i data-lucide="credit-card" class="w-3.5 h-3.5"></i> Card
+                            </button>
+                            <button onclick="setPaymentMethod('Transfer')" id="pay-method-transfer" class="py-2 text-[11px] font-semibold rounded-lg border border-slate-800 bg-slate-950 text-slate-400 flex items-center justify-center gap-1 transition-all">
+                                <i data-lucide="arrow-right-left" class="w-3.5 h-3.5"></i> Transfer
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Cash received / change calculation for cash payments -->
+                    <div id="cash-change-container" class="grid grid-cols-2 gap-2 bg-slate-950 p-2 rounded-xl border border-slate-800">
+                        <div>
+                            <span class="text-[10px] text-slate-400 block">Cash Tendered (MAD):</span>
+                            <input type="number" id="cash-tendered" step="10" placeholder="0.00" oninput="calculateChange()" class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-xs text-slate-100 font-mono">
+                        </div>
+                        <div class="text-right">
+                            <span class="text-[10px] text-slate-400 block">Change Due:</span>
+                            <span id="cash-change-due" class="text-xs font-bold text-emerald-400 font-mono leading-7">0.00 MAD</span>
+                        </div>
+                    </div>
+
+                    <!-- Checkout & Print Receipt Button -->
+                    <button onclick="checkout()" class="w-full bg-gradient-to-r from-gold-500 via-gold-400 to-amber-500 hover:from-gold-400 hover:to-gold-300 text-slate-950 font-bold py-3 rounded-xl transition-all shadow-lg shadow-gold-500/20 text-xs flex items-center justify-center gap-2 uppercase tracking-wider">
+                        <i data-lucide="printer" class="w-4 h-4"></i>
+                        <span>Checkout &amp; Print Receipt</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= INVENTORY VIEW ================= -->
+        <div id="view-inventory" class="hidden space-y-6">
+            
+            <!-- Inventory Top Banner -->
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900 border border-slate-800 p-5 rounded-2xl">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h2 class="text-lg font-bold text-slate-100">Product Catalog, Stock &amp; Barcode Tags</h2>
+                        <span id="inventory-count-badge" class="text-xs bg-slate-800 text-gold-400 px-2 py-0.5 rounded-full border border-slate-700">0 products</span>
+                    </div>
+                    <p class="text-xs text-slate-400 mt-1">Import Excel inventory using AI, generate thermal barcode tags, and manage boutique collections.</p>
+                </div>
+
+                <!-- Action Buttons: Owner & Manager Only -->
+                <div class="flex flex-wrap items-center gap-2">
+                    <!-- AI Excel Upload Button -->
+                    <button onclick="requireRole(['owner', 'manager'], openAiImportModal)" class="bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white text-xs font-bold px-3.5 py-2.5 rounded-xl transition-all flex items-center gap-2 shadow-lg shadow-emerald-500/20">
+                        <i data-lucide="sparkles" class="w-4 h-4 text-emerald-200"></i>
+                        <span>AI Excel Import</span>
+                    </button>
+
+                    <!-- Batch Barcodes Print Button -->
+                    <button onclick="openBatchBarcodeModal()" class="bg-slate-800 hover:bg-slate-700 text-gold-400 text-xs font-semibold px-3 py-2.5 rounded-xl border border-slate-700 transition-all flex items-center gap-2">
+                        <i data-lucide="barcode" class="w-4 h-4"></i>
+                        <span>Batch Barcode Tags</span>
+                    </button>
+
+                    <!-- Add Single Product Button -->
+                    <button onclick="requireRole(['owner', 'manager'], openAddProductModal)" class="bg-gold-500 hover:bg-gold-400 text-slate-950 text-xs font-bold px-4 py-2.5 rounded-xl transition-all flex items-center gap-2 shadow-lg shadow-gold-500/20">
+                        <i data-lucide="plus" class="w-4 h-4"></i>
+                        <span>New Product</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Live Barcode Scanner for Stock Page (Quick Stock Increment & New Product Registration) -->
+            <div class="bg-gradient-to-r from-slate-900 via-slate-900 to-slate-950 border border-gold-500/30 p-3.5 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-3 shadow-xl">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-gold-500/10 border border-gold-500/30 flex items-center justify-center text-gold-400 shadow-inner">
+                        <i data-lucide="scan" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h3 class="text-xs font-bold text-slate-100 uppercase tracking-wider">Stock Barcode Scanner</h3>
+                            <span class="text-[9px] font-mono bg-emerald-500/20 text-emerald-300 font-bold px-2 py-0.5 rounded-full border border-emerald-500/30 flex items-center gap-1.5">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+                                SCANNER READY
+                            </span>
+                        </div>
+                        <p class="text-[11px] text-slate-400">Scan any product tag: if it exists, stock <b>increments +1</b>. If it's a new barcode, it <b>opens the add form instantly</b>.</p>
+                    </div>
+                </div>
+                <div class="relative w-full md:w-80">
+                    <i data-lucide="barcode" class="w-4 h-4 absolute left-3.5 top-3 text-gold-400"></i>
+                    <input type="text" id="inv-barcode-scanner-input" onkeydown="handleInventoryBarcodeScan(event)" placeholder="Scan product barcode (gun)..." class="w-full bg-slate-950 border border-slate-700 focus:border-gold-500 rounded-xl pl-10 pr-24 py-2.5 text-xs text-slate-100 font-mono focus:outline-none transition-all placeholder:text-slate-500 shadow-inner">
+                    <span class="absolute right-2 top-2 text-[9px] bg-slate-800 text-gold-400 font-semibold px-2 py-1 rounded font-mono">ENTER / SCAN</span>
+                </div>
+            </div>
+
+            <!-- Role Access Notice Banner if Cashier -->
+            <div id="role-cashier-alert" class="hidden bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 flex items-center justify-between text-xs text-amber-300">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="info" class="w-4 h-4 text-amber-400"></i>
+                    <span>You are signed in as a <b>Cashier</b> (Catalog view mode). Adding, editing, and deleting products requires <b>Owner</b> or <b>Manager</b> access.</span>
+                </div>
+                <button onclick="openPinModal()" class="text-gold-400 underline font-semibold ml-2">Switch User</button>
+            </div>
+
+            <!-- Inventory Search & Filters -->
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+                <div class="relative w-full sm:w-80">
+                    <i data-lucide="search" class="w-4 h-4 absolute left-3 top-3 text-slate-400"></i>
+                    <input type="text" id="inv-search-input" onkeyup="renderInventoryTable()" placeholder="Filter by name, SKU or barcode..." class="w-full bg-slate-950 border border-slate-800 rounded-lg pl-9 pr-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-gold-500/50">
+                </div>
+                <div class="flex items-center gap-2 w-full sm:w-auto">
+                    <select id="inv-category-filter" onchange="renderInventoryTable()" class="bg-slate-950 border border-slate-800 text-xs text-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:border-gold-500/50">
+                        <option value="ALL">All Categories</option>
+                        <option value="Scarves">Scarves</option>
+                        <option value="Clothes">Clothes & Caftans</option>
+                        <option value="Boots">Boots & Shoes</option>
+                        <option value="Jewelry">Jewelry</option>
+                        <option value="Accessories">Accessories</option>
+                    </select>
+                    <button onclick="exportProductsExcel()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-3 py-2 rounded-lg border border-slate-700 flex items-center gap-1.5 transition-colors" title="Export inventory list to Excel">
+                        <i data-lucide="download" class="w-3.5 h-3.5"></i> Export Excel
+                    </button>
+                </div>
+            </div>
+
+            <!-- Inventory Table -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs text-slate-300">
+                        <thead class="bg-slate-950 text-slate-400 border-b border-slate-800 font-semibold uppercase tracking-wider text-[10px]">
+                            <tr>
+                                <th class="p-3.5">Photo</th>
+                                <th class="p-3.5">Barcode / SKU</th>
+                                <th class="p-3.5">Product Title</th>
+                                <th class="p-3.5">Category</th>
+                                <th class="p-3.5">Price (MAD)</th>
+                                <th class="p-3.5">Stock</th>
+                                <th class="p-3.5 text-right">Actions (Management)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inventory-table-body" class="divide-y divide-slate-800/60">
+                            <!-- Injected dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= OWNER & MANAGER MANAGEMENT VIEW ================= -->
+        <div id="view-owner" class="hidden space-y-6">
+            <div class="border-b border-slate-800 pb-4 flex items-center justify-between">
+                <div>
+                    <h2 class="text-lg font-bold text-gold-400 flex items-center gap-2">
+                        <i data-lucide="crown" class="w-5 h-5 text-gold-400"></i>
+                        <span>Executive &amp; Admin Dashboard</span>
+                    </h2>
+                    <p class="text-xs text-slate-400">Role permissions (Owner, Manager, Cashier), financial performance, and store security.</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="exportFullReport()" class="bg-slate-800 hover:bg-slate-700 text-gold-400 text-xs px-3 py-1.5 rounded-lg border border-slate-700 flex items-center gap-1.5">
+                        <i data-lucide="file-text" class="w-3.5 h-3.5"></i> Sales Report
+                    </button>
+                </div>
+            </div>
+
+            <!-- Metrics Overview -->
+            <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl">
+                    <span class="text-[11px] text-slate-400 font-medium">Total Revenue</span>
+                    <p id="owner-stat-sales" class="text-xl font-bold text-gold-400 mt-1">0.00 MAD</p>
+                    <span class="text-[10px] text-slate-500">Gross sales recorded</span>
+                </div>
+                <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl">
+                    <span class="text-[11px] text-slate-400 font-medium">Completed Transactions</span>
+                    <p id="owner-stat-orders" class="text-xl font-bold text-slate-100 mt-1">0</p>
+                    <span class="text-[10px] text-slate-500">Printed receipts</span>
+                </div>
+                <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl">
+                    <span class="text-[11px] text-slate-400 font-medium">Inventory Asset Value</span>
+                    <p id="owner-stat-stock-val" class="text-xl font-bold text-emerald-400 mt-1">0.00 MAD</p>
+                    <span id="owner-stat-items-count" class="text-[10px] text-slate-500">0 catalog items</span>
+                </div>
+                <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl">
+                    <span class="text-[11px] text-slate-400 font-medium">Team &amp; Roles</span>
+                    <p id="owner-stat-staff" class="text-xl font-bold text-sky-400 mt-1">3 Members</p>
+                    <span class="text-[10px] text-slate-500">Owner, Managers, Cashiers</span>
+                </div>
+            </div>
+
+            <!-- Staff & Access Permissions Panel -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="font-semibold text-xs text-slate-200 uppercase tracking-wider">Staff Permissions &amp; PIN Codes</h3>
+                        <p class="text-[11px] text-slate-400"><b>Owners</b> and <b>Managers</b> have permission to add, edit, and delete products.</p>
+                    </div>
+                    <button onclick="openAddStaffModal()" class="text-xs bg-gold-500 hover:bg-gold-400 text-slate-950 font-bold px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 shadow-md">
+                        <i data-lucide="user-plus" class="w-3.5 h-3.5"></i>
+                        <span>Add Team Member</span>
+                    </button>
+                </div>
+
+                <div id="staff-card-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                    <!-- Staff Cards injected dynamically -->
+                </div>
+            </div>
+
+            <!-- Recent Sales Ledger -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+                <div class="flex items-center justify-between">
+                    <h3 class="font-semibold text-xs text-slate-200 uppercase tracking-wider">Recent Sales Ledger</h3>
+                    <button onclick="clearSalesHistory()" class="text-[10px] text-rose-400 hover:underline">Clear ledger</button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs text-slate-300">
+                        <thead class="bg-slate-950 text-slate-400 uppercase text-[10px]">
+                            <tr>
+                                <th class="p-2.5">Invoice #</th>
+                                <th class="p-2.5">Date &amp; Time</th>
+                                <th class="p-2.5">Cashier</th>
+                                <th class="p-2.5">Items</th>
+                                <th class="p-2.5">Payment</th>
+                                <th class="p-2.5 text-right">Net Total</th>
+                                <th class="p-2.5 text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sales-history-body" class="divide-y divide-slate-800/60">
+                            <!-- Injected dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- ============================================================== -->
+    <!-- MODALS SECTION                                                 -->
+    <!-- ============================================================== -->
+
+    <!-- Modal 1: AI Excel / CSV File Import (THE REQUESTED FEATURE) -->
+    <div id="modal-ai-excel" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-2xl w-full space-y-5 shadow-2xl overflow-y-auto max-h-[90vh]">
+            <div class="flex items-start justify-between border-b border-slate-800 pb-3">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center text-white shadow-lg shadow-emerald-500/20">
+                        <i data-lucide="file-spreadsheet" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-slate-100 flex items-center gap-2">
+                            <span>AI Excel Inventory Importer</span>
+                            <span class="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-500/30 font-mono">AI Auto-Scan</span>
+                        </h3>
+                        <p class="text-xs text-slate-400">Automatically import products from any Excel (.xlsx, .xls) or CSV file.</p>
+                    </div>
+                </div>
+                <button onclick="closeModal('modal-ai-excel')" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Smart Drag and Drop Upload Area -->
+            <div id="drop-zone" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDropFile(event)" class="border-2 border-dashed border-slate-700 hover:border-gold-500/70 bg-slate-950/70 rounded-2xl p-6 text-center cursor-pointer transition-all">
+                <input type="file" id="excel-file-input" accept=".xlsx, .xls, .csv" onchange="handleExcelUpload(event)" class="hidden">
+                <div onclick="document.getElementById('excel-file-input').click()" class="space-y-3">
+                    <div class="w-12 h-12 bg-gold-500/10 text-gold-400 rounded-2xl flex items-center justify-center mx-auto border border-gold-500/20">
+                        <i data-lucide="upload-cloud" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs font-semibold text-slate-200">Click to choose an Excel file or drag &amp; drop here</p>
+                        <p class="text-[11px] text-slate-500 mt-1">Accepted formats: <b>.xlsx, .xls, .csv</b> (Supplier catalog or inventory export)</p>
+                    </div>
+                    <div class="inline-flex items-center gap-1.5 text-[11px] text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
+                        <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i>
+                        <span>AI Auto-Detects: Title, Price, Category, Stock &amp; Creates Barcodes!</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Download Sample Template Helper -->
+            <div class="flex items-center justify-between text-xs bg-slate-950 p-3 rounded-xl border border-slate-800">
+                <div class="text-slate-400 text-[11px]">
+                    Need an empty spreadsheet template ready to fill?
+                </div>
+                <button onclick="downloadSampleTemplate()" class="text-gold-400 hover:text-gold-300 font-semibold text-[11px] flex items-center gap-1">
+                    <i data-lucide="file-down" class="w-3.5 h-3.5"></i> Download Excel Sample Template
+                </button>
+            </div>
+
+            <!-- AI Detection & Preview Panel -->
+            <div id="ai-preview-panel" class="hidden space-y-3 border-t border-slate-800 pt-3">
+                <div class="flex items-center justify-between">
+                    <h4 class="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
+                        <i data-lucide="eye" class="w-4 h-4 text-gold-400"></i>
+                        <span>AI Analysis Preview (<span id="parsed-count">0</span> items detected)</span>
+                    </h4>
+                    <span id="ai-confidence-badge" class="text-[10px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded border border-emerald-500/20">Columns recognized successfully</span>
+                </div>
+
+                <div class="max-h-48 overflow-y-auto border border-slate-800 rounded-xl bg-slate-950">
+                    <table class="w-full text-left text-[11px] text-slate-300">
+                        <thead class="bg-slate-900 text-slate-400 sticky top-0 uppercase text-[9px]">
+                            <tr>
+                                <th class="p-2">Product Name</th>
+                                <th class="p-2">Category</th>
+                                <th class="p-2">Price (MAD)</th>
+                                <th class="p-2">Stock</th>
+                                <th class="p-2">Barcode / SKU</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ai-preview-table-body" class="divide-y divide-slate-800">
+                            <!-- Injected dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="flex items-center justify-between pt-2">
+                    <div class="text-[11px] text-slate-400">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" id="overwrite-existing-check" class="rounded bg-slate-800 border-slate-700 text-gold-500">
+                            <span>Update existing products matching SKU or title</span>
+                        </label>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="resetAiUpload()" class="px-3 py-2 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl">Cancel</button>
+                        <button onclick="commitAiImport()" class="px-5 py-2 text-xs font-bold bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 rounded-xl shadow-lg shadow-emerald-500/20 flex items-center gap-1.5">
+                            <i data-lucide="check" class="w-4 h-4"></i>
+                            <span>Import &amp; Add to Catalog</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 2: Add Product Modal (Single Product) -->
+    <div id="modal-add-product" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full space-y-4 shadow-2xl">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                <h3 class="text-sm font-bold text-slate-100 flex items-center gap-2">
+                    <i data-lucide="plus-circle" class="w-4 h-4 text-gold-400"></i>
+                    <span>Add New Product</span>
+                </h3>
+                <button onclick="closeModal('modal-add-product')" class="text-slate-400 hover:text-white">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+            
+            <form onsubmit="handleAddProduct(event)" class="space-y-3">
+                <div>
+                    <label class="text-[11px] text-slate-400 block mb-1">Product Title *</label>
+                    <input type="text" id="new-prod-title" required placeholder="e.g. Royal Silk Caftan with Gold Embroidery" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none focus:border-gold-500/50">
+                </div>
+                
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-[11px] text-slate-400 block mb-1">Category *</label>
+                        <select id="new-prod-category" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none focus:border-gold-500/50">
+                            <option value="Scarves">Scarves (Silk & Shawls)</option>
+                            <option value="Clothes">Clothes (Caftans & Dresses)</option>
+                            <option value="Boots">Boots & Shoes</option>
+                            <option value="Jewelry">Jewelry (Luxury Jewelry)</option>
+                            <option value="Accessories">Accessories (Bags & Belts)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-[11px] text-slate-400 block mb-1">Price (MAD) *</label>
+                        <input type="number" id="new-prod-price" min="0" step="0.5" required placeholder="350.00" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none focus:border-gold-500/50">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-[11px] text-slate-400 block mb-1">Initial Stock</label>
+                        <input type="number" id="new-prod-stock" min="0" value="10" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none focus:border-gold-500/50">
+                    </div>
+                    <div>
+                        <label class="text-[11px] text-slate-400 block mb-1">Barcode / SKU (Optional)</label>
+                        <input type="text" id="new-prod-custom-id" placeholder="Auto-generated if blank" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none focus:border-gold-500/50 font-mono">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="text-[11px] text-slate-400 block mb-1">Product Photo (File upload)</label>
+                    <input type="file" id="new-prod-image" accept="image/*" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-xs text-slate-400 file:mr-3 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-[10px] file:bg-slate-800 file:text-gold-400">
+                </div>
+
+                <div class="flex gap-2 pt-2">
+                    <button type="button" onclick="closeModal('modal-add-product')" class="flex-1 py-2 text-xs font-semibold bg-slate-800 hover:bg-slate-700 rounded-xl text-slate-300">Cancel</button>
+                    <button type="submit" class="flex-1 py-2 text-xs font-semibold bg-gold-500 hover:bg-gold-400 text-slate-950 rounded-xl font-bold">Save Product</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 3: Edit Product Modal (Owner & Manager Access) -->
+    <div id="modal-edit-product" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full space-y-4 shadow-2xl">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                <h3 class="text-sm font-bold text-slate-100 flex items-center gap-2">
+                    <i data-lucide="edit-3" class="w-4 h-4 text-gold-400"></i>
+                    <span>Edit Product</span>
+                </h3>
+                <button onclick="closeModal('modal-edit-product')" class="text-slate-400 hover:text-white">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+            
+            <form onsubmit="handleSaveEditProduct(event)" class="space-y-3">
+                <input type="hidden" id="edit-prod-original-id">
+
+                <div>
+                    <label class="text-[11px] text-slate-400 block mb-1">Product Title *</label>
+                    <input type="text" id="edit-prod-title" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none focus:border-gold-500/50">
+                </div>
+                
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-[11px] text-slate-400 block mb-1">Category</label>
+                        <select id="edit-prod-category" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none focus:border-gold-500/50">
+                            <option value="Scarves">Scarves (Silk & Shawls)</option>
+                            <option value="Clothes">Clothes (Caftans & Dresses)</option>
+                            <option value="Boots">Boots & Shoes</option>
+                            <option value="Jewelry">Jewelry (Luxury Jewelry)</option>
+                            <option value="Accessories">Accessories (Bags & Belts)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-[11px] text-slate-400 block mb-1">Price (MAD) *</label>
+                        <input type="number" id="edit-prod-price" min="0" step="0.5" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none focus:border-gold-500/50">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-[11px] text-slate-400 block mb-1">Available Stock</label>
+                        <input type="number" id="edit-prod-stock" min="0" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none focus:border-gold-500/50">
+                    </div>
+                    <div>
+                        <label class="text-[11px] text-slate-400 block mb-1">Barcode / SKU</label>
+                        <input type="text" id="edit-prod-id" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200 font-mono focus:outline-none focus:border-gold-500/50">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="text-[11px] text-slate-400 block mb-1">New Photo (Optional)</label>
+                    <input type="file" id="edit-prod-image" accept="image/*" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-xs text-slate-400">
+                </div>
+
+                <div class="flex gap-2 pt-2">
+                    <button type="button" onclick="closeModal('modal-edit-product')" class="flex-1 py-2 text-xs font-semibold bg-slate-800 hover:bg-slate-700 rounded-xl text-slate-300">Cancel</button>
+                    <button type="submit" class="flex-1 py-2 text-xs font-semibold bg-gold-500 hover:bg-gold-400 text-slate-950 rounded-xl font-bold">Update Product</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 4: Batch Barcode Tags Printing -->
+    <div id="modal-batch-barcode" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-lg w-full space-y-4 shadow-2xl">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                <h3 class="text-sm font-bold text-slate-100 flex items-center gap-2">
+                    <i data-lucide="printer" class="w-4 h-4 text-gold-400"></i>
+                    <span>Thermal Barcode Tags Batch Print</span>
+                </h3>
+                <button onclick="closeModal('modal-batch-barcode')" class="text-slate-400 hover:text-white">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+            
+            <p class="text-xs text-slate-400">Select products to print labels formatted with barcode at top and price / title below.</p>
+
+            <div class="max-h-60 overflow-y-auto space-y-2 border border-slate-800 p-2 rounded-xl bg-slate-950" id="batch-barcode-items">
+                <!-- Checkboxes injected dynamically -->
+            </div>
+
+            <div class="flex items-center justify-between pt-2">
+                <button onclick="selectAllBatchBarcodes(true)" class="text-[11px] text-gold-400 hover:underline">Select All</button>
+                <div class="flex gap-2">
+                    <button onclick="closeModal('modal-batch-barcode')" class="px-3 py-2 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl">Cancel</button>
+                    <button onclick="printSelectedBarcodes()" class="px-4 py-2 text-xs font-bold bg-gold-500 hover:bg-gold-400 text-slate-950 rounded-xl flex items-center gap-1.5 shadow-md">
+                        <i data-lucide="printer" class="w-4 h-4"></i>
+                        <span>Print Selected Labels</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 5: Staff PIN Login / Switch User -->
+    <div id="modal-pin-switch" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-sm w-full space-y-4 text-center shadow-2xl">
+            <div class="w-12 h-12 bg-gold-500/10 border border-gold-500/20 rounded-2xl flex items-center justify-center mx-auto text-gold-400">
+                <i data-lucide="users" class="w-6 h-6"></i>
+            </div>
+            <div>
+                <h3 class="text-sm font-bold text-slate-100">Switch User Account</h3>
+                <p class="text-xs text-slate-400 mt-0.5">Select your user profile and enter your 4-digit PIN.</p>
+            </div>
+            <div class="text-left">
+                <label class="text-[11px] text-slate-400 mb-1 block">Team Member:</label>
+                <select id="staff-select-dropdown" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none focus:border-gold-500/50">
+                    <!-- Dropdown items dynamically injected -->
+                </select>
+            </div>
+            <div class="text-left">
+                <label class="text-[11px] text-slate-400 mb-1 block">PIN Code (4 digits):</label>
+                <input type="password" id="staff-pin-input" placeholder="••••" maxlength="4" class="w-full text-center text-2xl tracking-[0.4em] font-mono bg-slate-950 border border-slate-800 rounded-xl py-2.5 text-gold-400 focus:outline-none focus:border-gold-500/50">
+            </div>
+            <div class="flex gap-2">
+                <button onclick="closeModal('modal-pin-switch')" class="flex-1 py-2 text-xs font-semibold bg-slate-800 hover:bg-slate-700 rounded-xl text-slate-300">Cancel</button>
+                <button onclick="authenticateStaff()" class="flex-1 py-2 text-xs font-bold bg-gold-500 hover:bg-gold-400 text-slate-950 rounded-xl">Sign In</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 6: Owner / Manager Security Gate for Sensitive Tabs -->
+    <div id="modal-owner-auth" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-sm w-full space-y-4 text-center shadow-2xl">
+            <div class="w-12 h-12 bg-gold-500/10 border border-gold-500/20 rounded-full flex items-center justify-center mx-auto text-gold-400">
+                <i data-lucide="lock" class="w-6 h-6"></i>
+            </div>
+            <div>
+                <h3 class="text-sm font-bold text-slate-100">Executive Security Gate</h3>
+                <p class="text-xs text-slate-400 mt-0.5">Enter Owner or Manager PIN code to unlock administration.</p>
+            </div>
+            <input type="password" id="owner-pass-input" placeholder="••••" maxlength="4" class="w-full text-center text-2xl tracking-[0.5em] font-mono bg-slate-950 border border-slate-800 rounded-xl py-3 text-gold-400 focus:outline-none focus:border-gold-500/50">
+            <div class="flex gap-2">
+                <button onclick="closeModal('modal-owner-auth')" class="flex-1 py-2 text-xs font-semibold bg-slate-800 hover:bg-slate-700 rounded-xl text-slate-300">Cancel</button>
+                <button onclick="verifyOwnerAuth()" class="flex-1 py-2 text-xs font-bold bg-gold-500 hover:bg-gold-400 text-slate-950 rounded-xl">Unlock</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 7: Add Staff Member -->
+    <div id="modal-add-staff" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-sm w-full space-y-4 shadow-2xl">
+            <h3 class="text-sm font-bold text-slate-100">Add Team Member</h3>
+            <form onsubmit="handleAddStaff(event)" class="space-y-3">
+                <div>
+                    <label class="text-[11px] text-slate-400 block mb-1">Full Name</label>
+                    <input type="text" id="new-staff-name" required placeholder="e.g. Nadia Mansouri" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none focus:border-gold-500/50">
+                </div>
+                <div>
+                    <label class="text-[11px] text-slate-400 block mb-1">Role &amp; Permissions</label>
+                    <select id="new-staff-role" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none focus:border-gold-500/50">
+                        <option value="manager">Manager (Can Add, Edit &amp; Delete Products)</option>
+                        <option value="cashier" selected>Cashier / Sales (POS Terminal Only)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-[11px] text-slate-400 block mb-1">PIN Code (4 digits)</label>
+                    <input type="password" id="new-staff-pin" maxlength="4" pattern="\d{4}" required placeholder="e.g. 4321" class="w-full text-center tracking-widest bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-gold-400 focus:outline-none focus:border-gold-500/50 font-mono">
+                </div>
+                <div class="flex gap-2 pt-2">
+                    <button type="button" onclick="closeModal('modal-add-staff')" class="flex-1 py-2 text-xs font-semibold bg-slate-800 hover:bg-slate-700 rounded-xl text-slate-300">Cancel</button>
+                    <button type="submit" class="flex-1 py-2 text-xs font-bold bg-gold-500 hover:bg-gold-400 text-slate-950 rounded-xl">Create Account</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- PRINTABLE CONTAINER (HIDDEN ON SCREEN, VISIBLE ON PRINT) -->
+    <div id="printable-area"></div>
+
+    <!-- ============================================================== -->
+    <!-- APPLICATION LOGIC & SCRIPTS                                     -->
+    <!-- ============================================================== -->
+    <script>
+        // OWNER MASTER PIN
+        const OWNER_PASSWORD = "0000";
+
+        // GLOBAL APPLICATION STATE
+        let state = {
+            currentUser: "Summer",
+            currentRole: "owner", // 'owner', 'manager', 'cashier'
+            activeTab: "pos",
+            paymentMethod: "Cash",
+            cart: [],
+            aiParsedItems: [],
+            staffList: JSON.parse(localStorage.getItem('gbb_staff_v2_en')) || [
+                { name: "Summer", pin: "0000", role: "owner", title: "Boutique Owner" },
+                { name: "Khadija (Manager)", pin: "1234", role: "manager", title: "Store Manager" },
+                { name: "Youssef", pin: "5678", role: "cashier", title: "Sales Associate" }
+            ],
+            products: JSON.parse(localStorage.getItem('gbb_products_v2_en')) || [
+                { id: "GBB-SCV-00101", title: "Hand-Printed Floral Silk Scarf", category: "Scarves", price: 250, stock: 18, image: "https://images.unsplash.com/photo-1601924994987-69e26d50dc26?w=400" },
+                { id: "GBB-BOT-00102", title: "Artisanal Chic Leather Boots", category: "Boots", price: 850, stock: 8, image: "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?w=400" },
+                { id: "GBB-JWL-00103", title: "Royal Gold & Pearl Choker Necklace", category: "Jewelry", price: 450, stock: 12, image: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=400" },
+                { id: "GBB-CLO-00104", title: "Haute Couture Velvet Moroccan Caftan", category: "Clothes", price: 1450, stock: 5, image: "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?w=400" },
+                { id: "GBB-ACC-00105", title: "Casablanca Leather Handbag", category: "Accessories", price: 680, stock: 10, image: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=400" }
+            ],
+            salesHistory: JSON.parse(localStorage.getItem('gbb_sales_v2_en')) || []
+        };
+
+        // INITIALIZATION
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            renderCategoryBadges();
+            renderCatalog();
+            renderCartList();
+            renderInventoryTable();
+            renderStaffGrid();
+            renderSalesHistory();
+            updateOwnerStats();
+            updateRoleUI();
+            focusScannerInput();
+
+            // Keyboard shortcut listener for fast scanning & navigation
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'F2') {
+                    e.preventDefault();
+                    switchTab('pos');
+                    focusScannerInput();
+                } else if (e.key === 'F4') {
+                    e.preventDefault();
+                    switchTab('inventory');
+                }
+            });
+        });
+
+        function focusScannerInput() {
+            setTimeout(() => {
+                if (state.activeTab === 'pos') {
+                    const input = document.getElementById('pos-search-input');
+                    if (input) input.focus();
+                } else if (state.activeTab === 'inventory') {
+                    const input = document.getElementById('inv-barcode-scanner-input');
+                    if (input) input.focus();
+                }
+            }, 100);
+        }
+
+        // SHOW LUXURY TOAST NOTIFICATIONS
+        function showToast(message, type = 'gold') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            let bgClasses = "bg-slate-900 border border-gold-500/50 text-gold-400";
+            if (type === 'success') bgClasses = "bg-slate-900 border border-emerald-500/50 text-emerald-400";
+            if (type === 'error') bgClasses = "bg-slate-900 border border-rose-500/50 text-rose-400";
+            
+            toast.className = `${bgClasses} px-4 py-3 rounded-xl shadow-2xl text-xs font-semibold flex items-center gap-2 transform transition-all duration-300 translate-y-2 opacity-0 pointer-events-auto`;
+            toast.innerHTML = `
+                <i data-lucide="${type === 'success' ? 'check-circle' : type === 'error' ? 'alert-triangle' : 'sparkles'}" class="w-4 h-4"></i>
+                <span>${message}</span>
+            `;
+            container.appendChild(toast);
+            lucide.createIcons();
+
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            });
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3200);
+        }
+
+        // ==============================================================
+        // ROLE-BASED ACCESS CONTROL (OWNER & MANAGER)
+        // ==============================================================
+        function hasRole(allowedRoles) {
+            return allowedRoles.includes(state.currentRole);
+        }
+
+        function requireRole(allowedRoles, callback) {
+            if (hasRole(allowedRoles)) {
+                callback();
+            } else {
+                showToast("Restricted access: Owner or Manager credentials required!", "error");
+                openPinModal();
+            }
+        }
+
+        function updateRoleUI() {
+            const roleBadge = document.getElementById('current-user-role-badge');
+            const userDisplay = document.getElementById('current-user-display');
+            const cashierAlert = document.getElementById('role-cashier-alert');
+
+            userDisplay.innerText = state.currentUser;
+
+            if (state.currentRole === 'owner') {
+                roleBadge.className = "text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-wider bg-gold-500/20 text-gold-400 border border-gold-500/40";
+                roleBadge.innerText = "Owner";
+                if (cashierAlert) cashierAlert.classList.add('hidden');
+            } else if (state.currentRole === 'manager') {
+                roleBadge.className = "text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/40";
+                roleBadge.innerText = "Manager";
+                if (cashierAlert) cashierAlert.classList.add('hidden');
+            } else {
+                roleBadge.className = "text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-wider bg-slate-800 text-slate-300 border border-slate-700";
+                roleBadge.innerText = "Cashier";
+                if (cashierAlert && state.activeTab === 'inventory') cashierAlert.classList.remove('hidden');
+            }
+            renderInventoryTable();
+        }
+
+        // TAB SWITCHING
+        function switchTab(tab) {
+            if (tab === 'owner' && state.currentRole !== 'owner') {
+                document.getElementById('modal-owner-auth').classList.remove('hidden');
+                document.getElementById('owner-pass-input').focus();
+                return;
+            }
+
+            state.activeTab = tab;
+            ['pos', 'inventory', 'owner'].forEach(t => {
+                const viewEl = document.getElementById(`view-${t}`);
+                const btnEl = document.getElementById(`tab-btn-${t}`);
+                if (t === tab) {
+                    viewEl.classList.remove('hidden');
+                    btnEl.className = "flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold transition-all bg-gold-500 text-slate-950 shadow-md";
+                } else {
+                    viewEl.classList.add('hidden');
+                    btnEl.className = "flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-200 transition-all";
+                }
+            });
+
+            if (tab === 'pos') focusScannerInput();
+            if (tab === 'inventory') {
+                updateRoleUI();
+                focusScannerInput();
+            }
+            lucide.createIcons();
+        }
+
+        function verifyOwnerAuth() {
+            const inputPass = document.getElementById('owner-pass-input').value;
+            const authorized = state.staffList.find(s => (s.role === 'owner' || s.role === 'manager') && s.pin === inputPass);
+
+            if (authorized) {
+                closeModal('modal-owner-auth');
+                state.currentUser = authorized.name;
+                state.currentRole = authorized.role;
+                updateRoleUI();
+                state.activeTab = 'owner';
+                ['pos', 'inventory', 'owner'].forEach(t => {
+                    const viewEl = document.getElementById(`view-${t}`);
+                    const btnEl = document.getElementById(`tab-btn-${t}`);
+                    if (t === 'owner') {
+                        viewEl.classList.remove('hidden');
+                        btnEl.className = "flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold transition-all bg-gold-500 text-slate-950 shadow-md";
+                    } else {
+                        viewEl.classList.add('hidden');
+                        btnEl.className = "flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-200 transition-all";
+                    }
+                });
+                showToast(`Welcome, ${authorized.name} (${authorized.title || authorized.role})!`, "success");
+            } else {
+                showToast("Incorrect PIN or master password!", "error");
+            }
+            document.getElementById('owner-pass-input').value = '';
+        }
+
+        // ==============================================================
+        // CATALOG & SEARCH / QUICK BARCODE SCANNER
+        // ==============================================================
+        function renderCategoryBadges() {
+            const container = document.getElementById('quick-cat-badges');
+            const categories = [
+                { id: 'ALL', name: 'All' },
+                { id: 'Clothes', name: '👗 Caftans & Dresses' },
+                { id: 'Scarves', name: '🧣 Silk Scarves' },
+                { id: 'Jewelry', name: '✨ Jewelry' },
+                { id: 'Boots', name: '👢 Boots & Shoes' },
+                { id: 'Accessories', name: '👜 Bags & Acc' }
+            ];
+
+            container.innerHTML = categories.map(c => `
+                <button onclick="filterCategory('${c.id}')" class="whitespace-nowrap px-3 py-1 rounded-lg border text-xs font-medium transition-all ${c.id === 'ALL' ? 'bg-gold-500/10 border-gold-500/40 text-gold-400' : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'}">
+                    ${c.name}
+                </button>
+            `).join('');
+        }
+
+        function filterCategory(cat) {
+            document.getElementById('pos-category-filter').value = cat;
+            renderCatalog();
+        }
+
+        function handleSearchOrScan(event) {
+            const input = document.getElementById('pos-search-input');
+            const val = input.value.trim();
+
+            if (event.key === 'Enter' && val) {
+                const found = state.products.find(p => p.id.toLowerCase() === val.toLowerCase());
+                if (found) {
+                    addToCart(found.id);
+                    input.value = '';
+                    showToast(`Scanned: ${found.title}`, "success");
+                    renderCatalog();
+                    return;
+                }
+            }
+            renderCatalog();
+        }
+
+        function renderCatalog() {
+            const grid = document.getElementById('catalog-grid');
+            const query = (document.getElementById('pos-search-input')?.value || '').toLowerCase();
+            const category = document.getElementById('pos-category-filter')?.value || 'ALL';
+
+            const filtered = state.products.filter(p => {
+                const matchesQuery = p.title.toLowerCase().includes(query) || p.id.toLowerCase().includes(query);
+                const matchesCat = category === 'ALL' || p.category === category;
+                return matchesQuery && matchesCat;
+            });
+
+            if (filtered.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-full text-center py-12 text-slate-500 text-xs">
+                        <i data-lucide="search-x" class="w-8 h-8 mx-auto mb-2 opacity-40"></i>
+                        No products match your search.
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            grid.innerHTML = filtered.map(p => `
+                <div onclick="addToCart('${p.id}')" class="bg-slate-900 border border-slate-800 hover:border-gold-500/50 rounded-2xl p-2.5 cursor-pointer transition-all hover:scale-[1.02] flex flex-col justify-between group shadow-md hover:shadow-gold-500/10">
+                    <div class="relative overflow-hidden rounded-xl mb-2">
+                        <img src="${p.image}" class="w-full h-28 object-cover group-hover:scale-105 transition-transform duration-300" onerror="this.src='https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=200'">
+                        <span class="absolute top-1.5 left-1.5 text-[9px] bg-slate-950/80 backdrop-blur-sm text-gold-400 font-mono px-1.5 py-0.5 rounded border border-slate-800">
+                            ${p.id}
+                        </span>
+                        <span class="absolute bottom-1.5 right-1.5 text-[9px] ${p.stock > 0 ? 'bg-emerald-950/80 text-emerald-300 border-emerald-800' : 'bg-rose-950/80 text-rose-300 border-rose-800'} backdrop-blur-sm px-1.5 py-0.5 rounded border font-semibold">
+                            Stock: ${p.stock}
+                        </span>
+                    </div>
+                    <div>
+                        <span class="text-[9px] text-slate-500 uppercase font-bold tracking-wider">${p.category}</span>
+                        <h4 class="text-xs font-semibold text-slate-200 group-hover:text-gold-400 transition-colors line-clamp-2 leading-snug">${p.title}</h4>
+                    </div>
+                    <div class="mt-2.5 flex items-center justify-between pt-2 border-t border-slate-800/60">
+                        <span class="text-xs font-bold text-gold-400 font-mono">${p.price.toFixed(2)} MAD</span>
+                        <button class="w-6 h-6 rounded-lg bg-gold-500/10 text-gold-400 flex items-center justify-center group-hover:bg-gold-500 group-hover:text-slate-950 transition-colors">
+                            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        // ==============================================================
+        // CART LOGIC
+        // ==============================================================
+        function addToCart(productId) {
+            const prod = state.products.find(p => p.id === productId);
+            if (!prod) return;
+
+            const existing = state.cart.find(item => item.id === productId);
+            if (existing) {
+                if (existing.qty >= prod.stock) {
+                    showToast(`Maximum available stock reached (${prod.stock})`, "error");
+                    return;
+                }
+                existing.qty += 1;
+            } else {
+                if (prod.stock <= 0) {
+                    showToast("Item is out of stock!", "error");
+                    return;
+                }
+                state.cart.push({ ...prod, qty: 1 });
+            }
+            renderCartList();
+            focusScannerInput();
+        }
+
+        function updateCartQty(productId, delta) {
+            const item = state.cart.find(i => i.id === productId);
+            const prod = state.products.find(p => p.id === productId);
+            if (item) {
+                if (delta > 0 && prod && item.qty >= prod.stock) {
+                    showToast("Insufficient stock available!", "error");
+                    return;
+                }
+                item.qty += delta;
+                if (item.qty <= 0) {
+                    state.cart = state.cart.filter(i => i.id !== productId);
+                }
+            }
+            renderCartList();
+        }
+
+        function clearCart() {
+            state.cart = [];
+            renderCartList();
+            focusScannerInput();
+        }
+
+        function renderCartList() {
+            const container = document.getElementById('cart-list');
+            const countBadge = document.getElementById('cart-item-count');
+            
+            const totalItemsCount = state.cart.reduce((s, i) => s + i.qty, 0);
+            countBadge.innerText = `${totalItemsCount} item${totalItemsCount !== 1 ? 's' : ''}`;
+
+            if (state.cart.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12 text-slate-500 text-xs flex flex-col items-center">
+                        <i data-lucide="shopping-bag" class="w-8 h-8 opacity-30 mb-2"></i>
+                        <span>Cart is empty</span>
+                        <span class="text-[10px] text-slate-600 mt-1">Scan a barcode or select an item</span>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = state.cart.map(item => `
+                    <div class="py-2.5 flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2.5">
+                            <img src="${item.image}" class="w-9 h-9 object-cover rounded-lg border border-slate-800" onerror="this.src='https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=100'">
+                            <div>
+                                <div class="text-xs font-semibold text-slate-200 truncate w-32">${item.title}</div>
+                                <div class="text-[10px] text-gold-400 font-mono font-bold">${item.price.toFixed(2)} MAD</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-1.5 bg-slate-950 px-2 py-1 rounded-xl border border-slate-800">
+                            <button onclick="updateCartQty('${item.id}', -1)" class="w-5 h-5 flex items-center justify-center text-xs font-bold text-slate-400 hover:text-white rounded hover:bg-slate-800">-</button>
+                            <span class="text-xs font-bold px-1.5 text-slate-100 font-mono">${item.qty}</span>
+                            <button onclick="updateCartQty('${item.id}', 1)" class="w-5 h-5 flex items-center justify-center text-xs font-bold text-slate-400 hover:text-white rounded hover:bg-slate-800">+</button>
+                        </div>
+                        <div class="text-right text-xs font-bold text-slate-200 font-mono w-16">
+                            ${(item.price * item.qty).toFixed(2)}
+                        </div>
+                    </div>
+                `).join('');
+            }
+            lucide.createIcons();
+            updateCartTotals();
+        }
+
+        function updateCartTotals() {
+            const subtotal = state.cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+            const discountPct = parseFloat(document.getElementById('cart-discount').value) || 0;
+            const grandTotal = subtotal * (1 - discountPct / 100);
+
+            document.getElementById('cart-subtotal').innerText = `${subtotal.toFixed(2)} MAD`;
+            document.getElementById('cart-grand-total').innerText = `${grandTotal.toFixed(2)} MAD`;
+            calculateChange();
+        }
+
+        function calculateChange() {
+            const tenderedInput = document.getElementById('cash-tendered');
+            const changeDisplay = document.getElementById('cash-change-due');
+            if (!tenderedInput || !changeDisplay) return;
+
+            const subtotal = state.cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+            const discountPct = parseFloat(document.getElementById('cart-discount').value) || 0;
+            const grandTotal = subtotal * (1 - discountPct / 100);
+
+            const tendered = parseFloat(tenderedInput.value) || 0;
+            const change = tendered > grandTotal ? (tendered - grandTotal) : 0;
+            changeDisplay.innerText = `${change.toFixed(2)} MAD`;
+        }
+
+        function setPaymentMethod(method) {
+            state.paymentMethod = method;
+            ['cash', 'card', 'transfer'].forEach(m => {
+                document.getElementById(`pay-method-${m}`).className = "py-2 text-[11px] font-semibold rounded-lg border border-slate-800 bg-slate-950 text-slate-400 flex items-center justify-center gap-1 transition-all";
+            });
+            const activeId = method === 'Cash' ? 'cash' : method === 'Card' ? 'card' : 'transfer';
+            document.getElementById(`pay-method-${activeId}`).className = "py-2 text-[11px] font-semibold rounded-lg border border-gold-500/50 bg-gold-500/10 text-gold-400 flex items-center justify-center gap-1 transition-all";
+            
+            const cashSection = document.getElementById('cash-change-container');
+            if (cashSection) {
+                if (method === 'Cash') cashSection.classList.remove('hidden');
+                else cashSection.classList.add('hidden');
+            }
+            focusScannerInput();
+        }
+
+        // ==============================================================
+        // CHECKOUT & REDESIGNED THERMAL RECEIPT (ENGLISH)
+        // ==============================================================
+        function checkout() {
+            if (state.cart.length === 0) {
+                showToast("Please add items to your cart before checkout!", "error");
+                return;
+            }
+
+            const subtotal = state.cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+            const discountPct = parseFloat(document.getElementById('cart-discount').value) || 0;
+            const grandTotal = subtotal * (1 - discountPct / 100);
+            const tendered = parseFloat(document.getElementById('cash-tendered')?.value) || grandTotal;
+            const changeDue = tendered > grandTotal ? (tendered - grandTotal) : 0;
+
+            // Reduce stock
+            state.cart.forEach(cartItem => {
+                const prod = state.products.find(p => p.id === cartItem.id);
+                if (prod) {
+                    prod.stock = Math.max(0, prod.stock - cartItem.qty);
+                }
+            });
+            localStorage.setItem('gbb_products_v2_en', JSON.stringify(state.products));
+
+            const saleRecord = {
+                id: "INV-" + Date.now().toString().slice(-8),
+                date: new Date().toLocaleDateString('en-US'),
+                time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+                staff: `${state.currentUser} (${state.currentRole})`,
+                items: [...state.cart],
+                subtotal,
+                discountPct,
+                grandTotal,
+                paymentMethod: state.paymentMethod,
+                tendered,
+                changeDue
+            };
+
+            state.salesHistory.unshift(saleRecord);
+            localStorage.setItem('gbb_sales_v2_en', JSON.stringify(state.salesHistory));
+
+            printReceipt(saleRecord);
+            
+            clearCart();
+            document.getElementById('cart-discount').value = 0;
+            if (document.getElementById('cash-tendered')) document.getElementById('cash-tendered').value = '';
+            
+            renderInventoryTable();
+            renderCatalog();
+            updateOwnerStats();
+            renderSalesHistory();
+            showToast("Sale completed & receipt printed successfully!", "success");
+        }
+
+        // ENLARGED, HIGH-LEGIBILITY THERMAL RECEIPT (OPTIMIZED FOR 80MM & 58MM PRINTERS)
+        function printReceipt(sale) {
+            const area = document.getElementById('printable-area');
+            const subtotalMad = sale.subtotal.toFixed(2);
+            const discountMad = (sale.subtotal * (sale.discountPct / 100)).toFixed(2);
+            const totalMad = sale.grandTotal.toFixed(2);
+            const tvaMad = (sale.grandTotal * 0.20 / 1.20).toFixed(2);
+
+            area.innerHTML = `
+                <div style="
+                    font-family: 'JetBrains Mono', 'Courier New', Courier, monospace;
+                    width: 78mm;
+                    max-width: 100%;
+                    margin: 0 auto;
+                    padding: 3mm 2mm;
+                    box-sizing: border-box;
+                    color: #000000;
+                    font-size: 13px;
+                    line-height: 1.35;
+                    -webkit-font-smoothing: antialiased;
+                ">
+                    <!-- Brand Header -->
+                    <div style="text-align: center; margin-bottom: 8px;">
+                        <div style="font-family: 'Cinzel', serif; font-size: 22px; font-weight: 900; letter-spacing: 1.5px; line-height: 1.2;">
+                            GOLDEN BLOSSOM
+                        </div>
+                        <div style="font-size: 12.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-top: 3px;">
+                            Haute Couture &amp; Women's Fashion
+                        </div>
+                        <div style="font-size: 12px; font-weight: 600; color: #111; margin-top: 4px;">
+                            Boulevard d'Anfa, Casablanca • Morocco
+                        </div>
+                        <div style="font-size: 12px; font-weight: 600; color: #111;">
+                            Tel: +212 5 22 45 78 90
+                        </div>
+                    </div>
+
+                    <!-- Divider -->
+                    <div style="border-top: 2px dashed #000; margin: 8px 0;"></div>
+
+                    <!-- Receipt Metadata -->
+                    <table style="width: 100%; font-size: 13px; line-height: 1.45; font-weight: 600; margin-bottom: 6px;">
+                        <tr>
+                            <td><b>Receipt #:</b></td>
+                            <td style="text-align: right; font-weight: 900; font-size: 14px;">${sale.id}</td>
+                        </tr>
+                        <tr>
+                            <td><b>Date &amp; Time:</b></td>
+                            <td style="text-align: right;">${sale.date} ${sale.time}</td>
+                        </tr>
+                        <tr>
+                            <td><b>Cashier:</b></td>
+                            <td style="text-align: right;">${sale.staff}</td>
+                        </tr>
+                        <tr>
+                            <td><b>Payment:</b></td>
+                            <td style="text-align: right; font-weight: 800;">${sale.paymentMethod}</td>
+                        </tr>
+                    </table>
+
+                    <!-- Table Header -->
+                    <div style="border-top: 2px solid #000; border-bottom: 2px solid #000; padding: 5px 0; margin-bottom: 6px;">
+                        <div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.5px;">
+                            <span>ITEM DESCRIPTION</span>
+                            <span>TOTAL</span>
+                        </div>
+                    </div>
+
+                    <!-- Itemized Articles (High Legibility 2-Row Format) -->
+                    <div style="margin-bottom: 8px;">
+                        ${sale.items.map(i => `
+                            <div style="padding: 4px 0; border-bottom: 1px dotted #888;">
+                                <div style="font-size: 14px; font-weight: 700; word-break: break-word; color: #000; line-height: 1.25;">
+                                    ${i.title}
+                                </div>
+                                <div style="display: flex; justify-content: space-between; align-items: baseline; font-size: 13px; color: #222; margin-top: 2px;">
+                                    <span>${i.qty} × ${i.price.toFixed(2)} MAD</span>
+                                    <span style="font-weight: 900; font-size: 14.5px; color: #000;">${(i.price * i.qty).toFixed(2)} MAD</span>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+
+                    <!-- Subtotals & Discounts -->
+                    <table style="width: 100%; font-size: 13.5px; line-height: 1.45; font-weight: 600;">
+                        <tr>
+                            <td>Subtotal:</td>
+                            <td style="text-align: right; font-weight: 700;">${subtotalMad} MAD</td>
+                        </tr>
+                        ${sale.discountPct > 0 ? `
+                        <tr>
+                            <td>Discount (${sale.discountPct}%):</td>
+                            <td style="text-align: right; font-weight: 800;">-${discountMad} MAD</td>
+                        </tr>` : ''}
+                        <tr>
+                            <td>VAT Included (20%):</td>
+                            <td style="text-align: right;">${tvaMad} MAD</td>
+                        </tr>
+                    </table>
+
+                    <!-- Prominent Total Net (Large, High Contrast) -->
+                    <div style="
+                        border-top: 3px solid #000;
+                        border-bottom: 3px solid #000;
+                        padding: 7px 0;
+                        margin: 8px 0;
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: baseline;
+                    ">
+                        <span style="font-size: 16px; font-weight: 900; letter-spacing: 0.5px;">TOTAL NET:</span>
+                        <span style="font-size: 23px; font-weight: 900; letter-spacing: -0.5px;">${totalMad} MAD</span>
+                    </div>
+
+                    <!-- Cash Payment Details -->
+                    ${sale.paymentMethod === 'Cash' ? `
+                    <table style="width: 100%; font-size: 13px; line-height: 1.4; color: #111; margin-bottom: 6px;">
+                        <tr>
+                            <td>Cash Tendered:</td>
+                            <td style="text-align: right; font-weight: 700;">${(sale.tendered || sale.grandTotal).toFixed(2)} MAD</td>
+                        </tr>
+                        <tr>
+                            <td>Change Due:</td>
+                            <td style="text-align: right; font-weight: 900; font-size: 14.5px;">${(sale.changeDue || 0).toFixed(2)} MAD</td>
+                        </tr>
+                    </table>` : ''}
+
+                    <!-- Barcode & QR Code Section -->
+                    <div style="text-align: center; margin-top: 10px; padding: 4px 0;">
+                        <div id="receipt-qrcode" style="display: inline-block; margin: 4px auto;"></div>
+                        <div style="margin-top: 4px; display: flex; justify-content: center;">
+                            <svg id="receipt-barcode" style="max-width: 62mm; height: 14mm;"></svg>
+                        </div>
+                        <div style="font-size: 13px; font-weight: 800; font-family: monospace; margin-top: 2px;">
+                            ${sale.id}
+                        </div>
+                    </div>
+
+                    <!-- Footer Note -->
+                    <div style="
+                        text-align: center;
+                        font-size: 11.5px;
+                        font-weight: 600;
+                        margin-top: 10px;
+                        border-top: 2px dashed #000;
+                        padding-top: 8px;
+                        line-height: 1.4;
+                    ">
+                        <p style="font-weight: 900; font-size: 13px; margin: 0 0 3px 0; letter-spacing: 0.5px;">
+                            THANK YOU FOR YOUR VISIT
+                        </p>
+                        <p style="margin: 2px 0;">
+                            Exchange or store credit within 7 days upon presentation of this receipt and original tags.
+                        </p>
+                        <p style="margin: 4px 0 0 0; font-size: 12px; font-weight: 800;">
+                            www.goldenblossom.ma
+                        </p>
+                    </div>
+                </div>
+            `;
+
+            // Verification QR Code (enlarged to 76px)
+            try {
+                new QRCode(document.getElementById("receipt-qrcode"), {
+                    text: `GBB:${sale.id}:TOTAL=${sale.grandTotal}`,
+                    width: 76,
+                    height: 76,
+                    correctLevel: QRCode.CorrectLevel.M
+                });
+            } catch(e) {
+                console.log("QRCode error", e);
+            }
+
+            // Receipt Barcode for Fast Scanner Guns
+            try {
+                JsBarcode("#receipt-barcode", sale.id, {
+                    format: "CODE128",
+                    width: 1.4,
+                    height: 36,
+                    displayValue: false,
+                    margin: 0
+                });
+            } catch(e) {
+                console.log("Receipt barcode error", e);
+            }
+
+            setTimeout(() => {
+                window.print();
+                focusScannerInput();
+            }, 180);
+        }
+
+        // ==============================================================
+        // NEW BARCODE THERMAL TAG DESIGN (ENGLISH)
+        // BARCODE ON TOP (SHORTER), BELOW IT THE BIGGER PRICE AND PRODUCT NAME
+        // ==============================================================
+        function printTag(productId) {
+            const p = state.products.find(item => item.id === productId);
+            if (!p) return;
+
+            const area = document.getElementById('printable-area');
+            
+            // Vertical Layout: Extra Short Barcode on Top, Bigger Bold Price and Name below
+            area.innerHTML = `
+                <div style="
+                    width: 50mm;
+                    min-height: 24mm;
+                    max-height: 28mm;
+                    margin: 0 auto;
+                    padding: 1mm 1.5mm;
+                    box-sizing: border-box;
+                    font-family: 'Plus Jakarta Sans', Arial, Helvetica, sans-serif;
+                    background: #ffffff;
+                    color: #000000;
+                    text-align: center;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: space-between;
+                    page-break-after: always;
+                ">
+                    <!-- Brand Top Header -->
+                    <div style="font-size: 4.8pt; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: #111;">
+                        GOLDEN BLOSSOM BOUTIQUE
+                    </div>
+
+                    <!-- 1. SHORTER BARCODE AT THE TOP (CENTERED) -->
+                    <div style="width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 auto;">
+                        <svg id="tagBarcode" style="max-width: 44mm; height: 6mm; display: block; margin: 0 auto;"></svg>
+                    </div>
+
+                    <!-- 2. BIGGER PROMINENT PRICE (THE REQUESTED FEATURE) -->
+                    <div style="
+                        font-size: 14pt;
+                        font-weight: 900;
+                        color: #000000;
+                        letter-spacing: -0.5px;
+                        margin: 0.5px 0;
+                        line-height: 1;
+                    ">
+                        ${p.price.toFixed(2)} MAD
+                    </div>
+
+                    <!-- 3. BELOW PRICE: THE PRODUCT NAME & SKU -->
+                    <div style="
+                        font-size: 6.5pt;
+                        font-weight: 700;
+                        line-height: 1.15;
+                        max-width: 48mm;
+                        white-space: nowrap;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                    ">
+                        ${p.title}
+                    </div>
+
+                    <div style="font-size: 4.8pt; font-family: monospace; font-weight: 600; color: #333;">
+                        ${p.id} • ${p.category}
+                    </div>
+                </div>
+            `;
+
+            // Shorter barcode height (12 instead of 24)
+            JsBarcode("#tagBarcode", p.id, { 
+                format: "CODE128", 
+                width: 1.1,
+                height: 12, 
+                displayValue: true,
+                fontSize: 6.5,
+                textMargin: 0.5,
+                margin: 0 
+            });
+
+            setTimeout(() => {
+                window.print();
+                focusScannerInput();
+            }, 120);
+        }
+
+        // ==============================================================
+        // BATCH BARCODE PRINTING (SHORTER BARCODE, BIGGER PRICE)
+        // ==============================================================
+        function openBatchBarcodeModal() {
+            const container = document.getElementById('batch-barcode-items');
+            container.innerHTML = state.products.map(p => `
+                <label class="flex items-center justify-between p-2 rounded-lg hover:bg-slate-900 cursor-pointer border border-slate-800/80">
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" value="${p.id}" class="batch-barcode-check rounded bg-slate-950 border-slate-700 text-gold-500">
+                        <div>
+                            <div class="text-xs font-semibold text-slate-200">${p.title}</div>
+                            <div class="text-[10px] text-slate-500 font-mono">${p.id} • ${p.price.toFixed(2)} MAD</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <span class="text-[10px] text-slate-400">Tag Qty:</span>
+                        <input type="number" id="batch-qty-${p.id}" min="1" value="1" class="w-12 bg-slate-950 border border-slate-800 rounded px-1.5 py-0.5 text-xs text-center text-gold-400">
+                    </div>
+                </label>
+            `).join('');
+
+            document.getElementById('modal-batch-barcode').classList.remove('hidden');
+        }
+
+        function selectAllBatchBarcodes(select) {
+            document.querySelectorAll('.batch-barcode-check').forEach(chk => chk.checked = select);
+        }
+
+        function printSelectedBarcodes() {
+            const selected = [];
+            document.querySelectorAll('.batch-barcode-check:checked').forEach(chk => {
+                const p = state.products.find(item => item.id === chk.value);
+                const count = parseInt(document.getElementById(`batch-qty-${chk.value}`)?.value) || 1;
+                if (p) {
+                    for (let i = 0; i < count; i++) {
+                        selected.push(p);
+                    }
+                }
+            });
+
+            if (selected.length === 0) {
+                showToast("Please select at least one product label!", "error");
+                return;
+            }
+
+            closeModal('modal-batch-barcode');
+
+            const area = document.getElementById('printable-area');
+            area.innerHTML = selected.map((p, index) => `
+                <div style="
+                    width: 50mm;
+                    min-height: 24mm;
+                    max-height: 28mm;
+                    margin: 0 auto;
+                    padding: 1mm 1.5mm;
+                    box-sizing: border-box;
+                    font-family: 'Plus Jakarta Sans', Arial, Helvetica, sans-serif;
+                    background: #ffffff;
+                    color: #000000;
+                    text-align: center;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: space-between;
+                    page-break-after: always;
+                ">
+                    <div style="font-size: 4.8pt; font-weight: 800; text-transform: uppercase; color: #111;">
+                        GOLDEN BLOSSOM BOUTIQUE
+                    </div>
+
+                    <!-- 1. Shorter Barcode at the top -->
+                    <div style="width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 auto;">
+                        <svg id="batchTagBarcode-${index}" style="max-width: 44mm; height: 6mm; display: block; margin: 0 auto;"></svg>
+                    </div>
+
+                    <!-- 2. Bigger Price below barcode -->
+                    <div style="
+                        font-size: 14pt;
+                        font-weight: 900;
+                        color: #000;
+                        margin: 0.5px 0;
+                        line-height: 1;
+                        letter-spacing: -0.5px;
+                    ">
+                        ${p.price.toFixed(2)} MAD
+                    </div>
+
+                    <!-- 3. Product name below price -->
+                    <div style="
+                        font-size: 6.5pt;
+                        font-weight: 700;
+                        max-width: 48mm;
+                        white-space: nowrap;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                    ">
+                        ${p.title}
+                    </div>
+
+                    <div style="font-size: 4.8pt; font-family: monospace; font-weight: 600; color: #333;">
+                        ${p.id}
+                    </div>
+                </div>
+            `).join('');
+
+            // Shorter barcode height (12) for batch tags
+            selected.forEach((p, index) => {
+                JsBarcode(`#batchTagBarcode-${index}`, p.id, {
+                    format: "CODE128",
+                    width: 1.1,
+                    height: 12,
+                    displayValue: true,
+                    fontSize: 6.5,
+                    textMargin: 0.5,
+                    margin: 0
+                });
+            });
+
+            setTimeout(() => {
+                window.print();
+                focusScannerInput();
+            }, 250);
+        }
+
+        // ==============================================================
+        // STOCK / INVENTORY LIVE BARCODE SCANNER
+        // (OWNER OR MANAGER CAN SCAN PRODUCT BARCODE TO ADD/INCREMENT STOCK OR REGISTER NEW PRODUCT)
+        // ==============================================================
+        function handleInventoryBarcodeScan(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const input = document.getElementById('inv-barcode-scanner-input');
+                const barcode = input.value.trim();
+                if (!barcode) return;
+
+                // Check role permission: only Owner or Manager
+                if (!hasRole(['owner', 'manager'])) {
+                    showToast("Restricted: Only Owner and Manager can modify stock or add products!", "error");
+                    input.value = '';
+                    openPinModal();
+                    return;
+                }
+
+                // Check if product already exists in catalog
+                const existingProduct = state.products.find(p => p.id.toLowerCase() === barcode.toLowerCase());
+
+                if (existingProduct) {
+                    // Product exists: increment stock by +1
+                    existingProduct.stock = (existingProduct.stock || 0) + 1;
+                    localStorage.setItem('gbb_products_v2_en', JSON.stringify(state.products));
+                    
+                    renderInventoryTable();
+                    renderCatalog();
+                    updateOwnerStats();
+
+                    showToast(`Stock +1 added to "${existingProduct.title}" (Total in stock: ${existingProduct.stock})`, "success");
+                    input.value = '';
+
+                    // Highlight the table row
+                    setTimeout(() => {
+                        const row = document.getElementById(`inv-row-${existingProduct.id}`);
+                        if (row) {
+                            row.classList.add('bg-emerald-500/25', 'ring-2', 'ring-emerald-400');
+                            row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                            setTimeout(() => row.classList.remove('bg-emerald-500/25', 'ring-2', 'ring-emerald-400'), 2000);
+                        }
+                    }, 100);
+                } else {
+                    // Product is NEW: open Add Product form with scanned barcode pre-filled
+                    input.value = '';
+                    showToast(`New Barcode "${barcode}" detected! Opening registration form...`, "gold");
+
+                    openAddProductModal();
+                    
+                    // Pre-fill barcode SKU in the form
+                    const skuInput = document.getElementById('new-prod-custom-id');
+                    if (skuInput) skuInput.value = barcode;
+                    
+                    // Focus immediately on product title so user can type name & price
+                    setTimeout(() => {
+                        const titleInput = document.getElementById('new-prod-title');
+                        if (titleInput) titleInput.focus();
+                    }, 150);
+                }
+            }
+        }
+
+        // ==============================================================
+        // AI EXCEL & CSV SMART IMPORTER (ENGLISH)
+        // ==============================================================
+        function openAiImportModal() {
+            resetAiUpload();
+            document.getElementById('modal-ai-excel').classList.remove('hidden');
+        }
+
+        function resetAiUpload() {
+            state.aiParsedItems = [];
+            document.getElementById('excel-file-input').value = '';
+            document.getElementById('ai-preview-panel').classList.add('hidden');
+            document.getElementById('drop-zone').classList.remove('border-emerald-500', 'bg-emerald-500/10');
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            document.getElementById('drop-zone').classList.add('border-gold-500', 'bg-gold-500/10');
+        }
+
+        function handleDragLeave(e) {
+            e.preventDefault();
+            document.getElementById('drop-zone').classList.remove('border-gold-500', 'bg-gold-500/10');
+        }
+
+        function handleDropFile(e) {
+            e.preventDefault();
+            document.getElementById('drop-zone').classList.remove('border-gold-500', 'bg-gold-500/10');
+            if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                processExcelFile(e.dataTransfer.files[0]);
+            }
+        }
+
+        function handleExcelUpload(e) {
+            if (e.target.files && e.target.files[0]) {
+                processExcelFile(e.target.files[0]);
+            }
+        }
+
+        function processExcelFile(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    
+                    const sheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[sheetName];
+                    const rows = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+
+                    if (!rows || rows.length === 0) {
+                        showToast("The Excel spreadsheet is empty!", "error");
+                        return;
+                    }
+
+                    const analyzedProducts = parseRowsWithAi(rows);
+                    state.aiParsedItems = analyzedProducts;
+
+                    displayAiPreview(analyzedProducts);
+                    showToast(`AI successfully analyzed ${analyzedProducts.length} items!`, "success");
+                } catch(err) {
+                    console.error(err);
+                    showToast("Error processing the Excel file!", "error");
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function parseRowsWithAi(rawRows) {
+            const sample = rawRows[0];
+            const keys = Object.keys(sample);
+
+            function findKey(patterns) {
+                return keys.find(k => {
+                    const clean = k.toLowerCase().trim().replace(/[^a-z0-9]/g, '');
+                    return patterns.some(p => clean.includes(p));
+                });
+            }
+
+            const titleKey = findKey(['designation', 'titre', 'nom', 'article', 'product', 'name', 'item', 'title', 'description']);
+            const priceKey = findKey(['prix', 'price', 'pu', 'cout', 'cost', 'rate', 'valeur']);
+            const catKey = findKey(['categorie', 'category', 'famille', 'department', 'type', 'group']);
+            const stockKey = findKey(['stock', 'qte', 'quantite', 'qty', 'count', 'quantity']);
+            const barcodeKey = findKey(['barcode', 'codebarre', 'code', 'sku', 'ref', 'reference', 'tag']);
+            const imageKey = findKey(['image', 'photo', 'img', 'url', 'picture']);
+
+            const categoryImages = {
+                'Clothes': 'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?w=400',
+                'Scarves': 'https://images.unsplash.com/photo-1601924994987-69e26d50dc26?w=400',
+                'Jewelry': 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=400',
+                'Boots': 'https://images.unsplash.com/photo-1543163521-1bf539c55dd2?w=400',
+                'Accessories': 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=400'
+            };
+
+            return rawRows.map((row, index) => {
+                const rawTitle = titleKey ? String(row[titleKey]).trim() : `Product ${index + 1}`;
+                let rawPrice = priceKey ? parseFloat(String(row[priceKey]).replace(/[^0-9.]/g, '')) : 0;
+                if (isNaN(rawPrice) || rawPrice <= 0) rawPrice = 150;
+
+                let rawStock = stockKey ? parseInt(String(row[stockKey]).replace(/[^0-9]/g, '')) : 10;
+                if (isNaN(rawStock)) rawStock = 10;
+
+                let rawCategory = catKey && row[catKey] ? String(row[catKey]).trim() : '';
+                if (!rawCategory) {
+                    const titleLower = rawTitle.toLowerCase();
+                    if (/robe|caftan|couture|dress|jacket|coat|gown|suit|gandora|djellaba/.test(titleLower)) rawCategory = 'Clothes';
+                    else if (/foulard|soie|silk|scarf|shawl|hijab|wrap|etole/.test(titleLower)) rawCategory = 'Scarves';
+                    else if (/collier|bague|bracelet|necklace|ring|earrings|jewel|gold|silver|pearl/.test(titleLower)) rawCategory = 'Jewelry';
+                    else if (/botte|chaussure|boots|shoe|heel|sandal|loafer|babouche/.test(titleLower)) rawCategory = 'Boots';
+                    else rawCategory = 'Accessories';
+                }
+
+                let rawBarcode = barcodeKey && row[barcodeKey] ? String(row[barcodeKey]).trim() : '';
+                if (!rawBarcode) {
+                    const prefix = rawCategory.substring(0, 3).toUpperCase();
+                    const randCode = Math.floor(10000 + Math.random() * 90000);
+                    rawBarcode = `GBB-${prefix}-${randCode}`;
+                }
+
+                const image = (imageKey && row[imageKey]) ? String(row[imageKey]) : (categoryImages[rawCategory] || categoryImages['Clothes']);
+
+                return {
+                    id: rawBarcode,
+                    title: rawTitle,
+                    category: rawCategory,
+                    price: rawPrice,
+                    stock: rawStock,
+                    image: image
+                };
+            }).filter(p => p.title.length > 0);
+        }
+
+        function displayAiPreview(items) {
+            document.getElementById('ai-preview-panel').classList.remove('hidden');
+            document.getElementById('parsed-count').innerText = items.length;
+
+            const tbody = document.getElementById('ai-preview-table-body');
+            tbody.innerHTML = items.slice(0, 50).map(item => `
+                <tr class="hover:bg-slate-900">
+                    <td class="p-2 font-medium text-slate-100">${item.title}</td>
+                    <td class="p-2 text-slate-400">${item.category}</td>
+                    <td class="p-2 font-mono font-bold text-gold-400">${item.price.toFixed(2)}</td>
+                    <td class="p-2">${item.stock}</td>
+                    <td class="p-2 font-mono text-emerald-400 font-semibold">${item.id}</td>
+                </tr>
+            `).join('');
+
+            if (items.length > 50) {
+                tbody.innerHTML += `<tr><td colspan="5" class="p-2 text-center text-slate-500 italic">... and ${items.length - 50} other items ready for import</td></tr>`;
+            }
+        }
+
+        function commitAiImport() {
+            if (!state.aiParsedItems || state.aiParsedItems.length === 0) {
+                showToast("No items available to import!", "error");
+                return;
+            }
+
+            const shouldOverwrite = document.getElementById('overwrite-existing-check').checked;
+            let addedCount = 0;
+            let updatedCount = 0;
+
+            state.aiParsedItems.forEach(newItem => {
+                const existingIndex = state.products.findIndex(p => p.id === newItem.id || p.title.toLowerCase() === newItem.title.toLowerCase());
+                if (existingIndex >= 0) {
+                    if (shouldOverwrite) {
+                        state.products[existingIndex] = { ...state.products[existingIndex], ...newItem };
+                        updatedCount++;
+                    }
+                } else {
+                    state.products.push(newItem);
+                    addedCount++;
+                }
+            });
+
+            localStorage.setItem('gbb_products_v2_en', JSON.stringify(state.products));
+
+            renderCatalog();
+            renderInventoryTable();
+            updateOwnerStats();
+            closeModal('modal-ai-excel');
+
+            showToast(`Import finished: +${addedCount} added, ${updatedCount} updated!`, "success");
+        }
+
+        function downloadSampleTemplate() {
+            const sampleData = [
+                { "Product_Title": "Royal Silk Scarf with Floral Motif", "Category": "Scarves", "Price_MAD": 290, "Stock": 15, "Barcode_SKU": "GBB-SCV-88201" },
+                { "Product_Title": "Emerald Velvet Couture Caftan", "Category": "Clothes", "Price_MAD": 1850, "Stock": 6, "Barcode_SKU": "GBB-CLO-88202" },
+                { "Product_Title": "Gold Pearl Luxury Choker Necklace", "Category": "Jewelry", "Price_MAD": 550, "Stock": 10, "Barcode_SKU": "GBB-JWL-88203" },
+                { "Product_Title": "Handcrafted Leather Boots", "Category": "Boots", "Price_MAD": 920, "Stock": 8, "Barcode_SKU": "GBB-BOT-88204" }
+            ];
+
+            const ws = XLSX.utils.json_to_sheet(sampleData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Inventory");
+            XLSX.writeFile(wb, "Golden_Blossom_Inventory_Template.xlsx");
+            showToast("Excel sample template downloaded!", "success");
+        }
+
+        function exportProductsExcel() {
+            const exportData = state.products.map(p => ({
+                "Barcode_SKU": p.id,
+                "Product_Title": p.title,
+                "Category": p.category,
+                "Price_MAD": p.price,
+                "Stock": p.stock,
+                "Image_URL": p.image
+            }));
+
+            const ws = XLSX.utils.json_to_sheet(exportData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Stock");
+            XLSX.writeFile(wb, `Stock_GoldenBlossom_${new Date().toISOString().slice(0, 10)}.xlsx`);
+            showToast("Inventory exported to Excel!", "success");
+        }
+
+        // ==============================================================
+        // INVENTORY MANAGEMENT: ADD, EDIT & DELETE (OWNER & MANAGER)
+        // ==============================================================
+        function renderInventoryTable() {
+            const tbody = document.getElementById('inventory-table-body');
+            const query = (document.getElementById('inv-search-input')?.value || '').toLowerCase();
+            const category = document.getElementById('inv-category-filter')?.value || 'ALL';
+
+            const filtered = state.products.filter(p => {
+                const matchesQuery = p.title.toLowerCase().includes(query) || p.id.toLowerCase().includes(query);
+                const matchesCat = category === 'ALL' || p.category === category;
+                return matchesQuery && matchesCat;
+            });
+
+            document.getElementById('inventory-count-badge').innerText = `${filtered.length} product${filtered.length !== 1 ? 's' : ''}`;
+
+            const canManage = hasRole(['owner', 'manager']);
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-slate-500">No products found</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(p => `
+                <tr id="inv-row-${p.id}" class="hover:bg-slate-900/60 transition-all duration-300">
+                    <td class="p-3.5">
+                        <img src="${p.image}" class="w-9 h-9 object-cover rounded-lg border border-slate-800" onerror="this.src='https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=100'">
+                    </td>
+                    <td class="p-3.5 font-mono text-gold-400 font-bold">${p.id}</td>
+                    <td class="p-3.5 font-semibold text-slate-100 max-w-[200px] truncate">${p.title}</td>
+                    <td class="p-3.5 text-slate-400">${p.category}</td>
+                    <td class="p-3.5 font-bold text-slate-200 font-mono">${p.price.toFixed(2)} MAD</td>
+                    <td class="p-3.5">
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${p.stock > 5 ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : p.stock > 0 ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'}">
+                            ${p.stock} in stock
+                        </span>
+                    </td>
+                    <td class="p-3.5 text-right space-x-1">
+                        <!-- Print Tag Button -->
+                        <button onclick="printTag('${p.id}')" title="Print Barcode Tag" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-gold-400 text-[10px] font-semibold rounded-lg border border-slate-700 transition-all inline-flex items-center gap-1">
+                            <i data-lucide="tag" class="w-3 h-3"></i>
+                            <span>Tag</span>
+                        </button>
+
+                        <!-- Edit Button: Owner & Manager -->
+                        ${canManage ? `
+                        <button onclick="openEditProductModal('${p.id}')" title="Edit Product" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-sky-400 text-[10px] font-semibold rounded-lg border border-slate-700 transition-all inline-flex items-center gap-1">
+                            <i data-lucide="edit" class="w-3 h-3"></i>
+                            <span>Edit</span>
+                        </button>
+
+                        <!-- Delete Button: Owner & Manager -->
+                        <button onclick="deleteProduct('${p.id}')" title="Delete Product" class="px-2 py-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-[10px] font-semibold rounded-lg border border-rose-500/30 transition-all inline-flex items-center">
+                            <i data-lucide="trash-2" class="w-3 h-3"></i>
+                        </button>
+                        ` : ''}
+                    </td>
+                </tr>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function openAddProductModal() {
+            document.getElementById('modal-add-product').classList.remove('hidden');
+        }
+
+        function handleAddProduct(e) {
+            e.preventDefault();
+            const title = document.getElementById('new-prod-title').value.trim();
+            const category = document.getElementById('new-prod-category').value;
+            const price = parseFloat(document.getElementById('new-prod-price').value);
+            const stock = parseInt(document.getElementById('new-prod-stock').value) || 0;
+            const customId = document.getElementById('new-prod-custom-id').value.trim();
+            const imageFile = document.getElementById('new-prod-image').files[0];
+
+            const newId = customId || `GBB-${category.substring(0, 3).toUpperCase()}-${Math.floor(10000 + Math.random() * 90000)}`;
+            const imageUrl = imageFile ? URL.createObjectURL(imageFile) : "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=400";
+
+            state.products.push({ id: newId, title, category, price, stock, image: imageUrl });
+            localStorage.setItem('gbb_products_v2_en', JSON.stringify(state.products));
+
+            renderCatalog();
+            renderInventoryTable();
+            updateOwnerStats();
+            closeModal('modal-add-product');
+            showToast(`Product "${title}" added successfully!`, "success");
+        }
+
+        function openEditProductModal(productId) {
+            const p = state.products.find(item => item.id === productId);
+            if (!p) return;
+
+            document.getElementById('edit-prod-original-id').value = p.id;
+            document.getElementById('edit-prod-id').value = p.id;
+            document.getElementById('edit-prod-title').value = p.title;
+            document.getElementById('edit-prod-category').value = p.category;
+            document.getElementById('edit-prod-price').value = p.price;
+            document.getElementById('edit-prod-stock').value = p.stock || 0;
+            document.getElementById('edit-prod-image').value = '';
+
+            document.getElementById('modal-edit-product').classList.remove('hidden');
+        }
+
+        function handleSaveEditProduct(e) {
+            e.preventDefault();
+            const originalId = document.getElementById('edit-prod-original-id').value;
+            const newId = document.getElementById('edit-prod-id').value.trim();
+            const title = document.getElementById('edit-prod-title').value.trim();
+            const category = document.getElementById('edit-prod-category').value;
+            const price = parseFloat(document.getElementById('edit-prod-price').value);
+            const stock = parseInt(document.getElementById('edit-prod-stock').value);
+            const imageFile = document.getElementById('edit-prod-image').files[0];
+
+            const prodIndex = state.products.findIndex(p => p.id === originalId);
+            if (prodIndex >= 0) {
+                state.products[prodIndex].id = newId;
+                state.products[prodIndex].title = title;
+                state.products[prodIndex].category = category;
+                state.products[prodIndex].price = price;
+                state.products[prodIndex].stock = stock;
+                if (imageFile) {
+                    state.products[prodIndex].image = URL.createObjectURL(imageFile);
+                }
+                localStorage.setItem('gbb_products_v2_en', JSON.stringify(state.products));
+
+                renderCatalog();
+                renderInventoryTable();
+                updateOwnerStats();
+                closeModal('modal-edit-product');
+                showToast(`Product "${title}" updated!`, "success");
+            }
+        }
+
+        function deleteProduct(productId) {
+            const p = state.products.find(item => item.id === productId);
+            if (!p) return;
+
+            if (confirm(`Are you sure you want to delete "${p.title}" (${p.id})?`)) {
+                state.products = state.products.filter(item => item.id !== productId);
+                localStorage.setItem('gbb_products_v2_en', JSON.stringify(state.products));
+                renderCatalog();
+                renderInventoryTable();
+                updateOwnerStats();
+                showToast(`Product "${p.title}" deleted`, "error");
+            }
+        }
+
+        // ==============================================================
+        // STAFF & ACCESS MANAGEMENT
+        // ==============================================================
+        function renderStaffGrid() {
+            const container = document.getElementById('staff-card-grid');
+            container.innerHTML = state.staffList.map(staff => {
+                let badgeClass = "bg-slate-800 text-slate-300 border-slate-700";
+                if (staff.role === 'owner') badgeClass = "bg-gold-500/10 text-gold-400 border-gold-500/30";
+                if (staff.role === 'manager') badgeClass = "bg-emerald-500/10 text-emerald-400 border-emerald-500/30";
+
+                return `
+                <div class="bg-slate-950 border border-slate-800 rounded-2xl p-3.5 flex items-center justify-between">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h4 class="text-xs font-bold text-slate-200">${staff.name}</h4>
+                            <span class="text-[9px] font-bold px-1.5 py-0.5 rounded border uppercase tracking-wider ${badgeClass}">${staff.title || staff.role}</span>
+                        </div>
+                        <span class="text-[10px] text-slate-500 font-mono mt-0.5 block">PIN: ••••</span>
+                    </div>
+                    ${staff.role !== 'owner' ? `
+                        <button onclick="deleteStaff('${staff.name}')" title="Delete staff access" class="text-rose-400 hover:text-rose-300 p-1.5 rounded-lg hover:bg-rose-500/10 transition-colors">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    ` : `<span class="text-[10px] font-bold text-gold-400"><i data-lucide="shield-check" class="w-4 h-4 text-gold-400"></i></span>`}
+                </div>
+            `;
+            }).join('');
+            lucide.createIcons();
+        }
+
+        function openAddStaffModal() {
+            document.getElementById('modal-add-staff').classList.remove('hidden');
+        }
+
+        function handleAddStaff(e) {
+            e.preventDefault();
+            const name = document.getElementById('new-staff-name').value.trim();
+            const role = document.getElementById('new-staff-role').value;
+            const pin = document.getElementById('new-staff-pin').value;
+            const title = role === 'manager' ? 'Store Manager' : 'Sales Associate';
+
+            state.staffList.push({ name, pin, role, title });
+            localStorage.setItem('gbb_staff_v2_en', JSON.stringify(state.staffList));
+
+            renderStaffGrid();
+            closeModal('modal-add-staff');
+            updateOwnerStats();
+            showToast(`Team member "${name}" created!`, "success");
+        }
+
+        function deleteStaff(name) {
+            if (confirm(`Revoke credentials and access for ${name}?`)) {
+                state.staffList = state.staffList.filter(s => s.name !== name);
+                localStorage.setItem('gbb_staff_v2_en', JSON.stringify(state.staffList));
+                renderStaffGrid();
+                updateOwnerStats();
+                showToast(`Staff member removed`, "error");
+            }
+        }
+
+        function openPinModal() {
+            const select = document.getElementById('staff-select-dropdown');
+            select.innerHTML = state.staffList.map(s => `
+                <option value="${s.name}">${s.name} (${s.title || s.role})</option>
+            `).join('');
+            document.getElementById('modal-pin-switch').classList.remove('hidden');
+            setTimeout(() => document.getElementById('staff-pin-input').focus(), 100);
+        }
+
+        function authenticateStaff() {
+            const selectedName = document.getElementById('staff-select-dropdown').value;
+            const enteredPin = document.getElementById('staff-pin-input').value;
+
+            const staff = state.staffList.find(s => s.name === selectedName);
+            if (staff && staff.pin === enteredPin) {
+                state.currentUser = staff.name;
+                state.currentRole = staff.role;
+                updateRoleUI();
+                closeModal('modal-pin-switch');
+                showToast(`Signed in as ${staff.name} (${staff.title || staff.role})`, "success");
+            } else {
+                showToast("Incorrect PIN code!", "error");
+            }
+            document.getElementById('staff-pin-input').value = '';
+            focusScannerInput();
+        }
+
+        // ==============================================================
+        // OWNER METRICS & REPORTING
+        // ==============================================================
+        function updateOwnerStats() {
+            const totalSales = state.salesHistory.reduce((sum, sale) => sum + sale.grandTotal, 0);
+            const totalStockValue = state.products.reduce((sum, p) => sum + (p.price * (p.stock || 0)), 0);
+
+            document.getElementById('owner-stat-sales').innerText = `${totalSales.toFixed(2)} MAD`;
+            document.getElementById('owner-stat-orders').innerText = state.salesHistory.length;
+            document.getElementById('owner-stat-stock-val').innerText = `${totalStockValue.toFixed(2)} MAD`;
+            document.getElementById('owner-stat-items-count').innerText = `${state.products.length} catalog items`;
+            document.getElementById('owner-stat-staff').innerText = `${state.staffList.length} Members`;
+        }
+
+        function renderSalesHistory() {
+            const tbody = document.getElementById('sales-history-body');
+            if (state.salesHistory.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-500">No sales recorded yet.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = state.salesHistory.slice(0, 30).map(sale => `
+                <tr class="hover:bg-slate-950/50">
+                    <td class="p-2.5 font-mono text-gold-400 font-bold">${sale.id}</td>
+                    <td class="p-2.5 text-slate-300">${sale.date} ${sale.time}</td>
+                    <td class="p-2.5 font-medium text-slate-200">${sale.staff}</td>
+                    <td class="p-2.5 text-slate-400">${sale.items.length} item(s)</td>
+                    <td class="p-2.5 text-slate-300">${sale.paymentMethod}</td>
+                    <td class="p-2.5 text-right font-mono font-bold text-gold-400">${sale.grandTotal.toFixed(2)} MAD</td>
+                    <td class="p-2.5 text-right">
+                        <button onclick='reprintSale(${JSON.stringify(sale).replace(/'/g, "&apos;")})' class="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-gold-400 text-[10px] rounded border border-slate-700">
+                            Reprint
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function reprintSale(sale) {
+            printReceipt(sale);
+        }
+
+        function clearSalesHistory() {
+            if (confirm("Reset and clear all recorded sales history?")) {
+                state.salesHistory = [];
+                localStorage.setItem('gbb_sales_v2_en', JSON.stringify([]));
+                renderSalesHistory();
+                updateOwnerStats();
+                showToast("Sales ledger cleared", "error");
+            }
+        }
+
+        function exportFullReport() {
+            const reportRows = state.salesHistory.map(s => ({
+                "Invoice_ID": s.id,
+                "Date": s.date,
+                "Time": s.time,
+                "Cashier": s.staff,
+                "Items": s.items.map(i => `${i.title} (x${i.qty})`).join(', '),
+                "Subtotal": s.subtotal,
+                "Discount_%": s.discountPct,
+                "Net_Total_MAD": s.grandTotal,
+                "Payment_Method": s.paymentMethod
+            }));
+
+            const ws = XLSX.utils.json_to_sheet(reportRows);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Sales");
+            XLSX.writeFile(wb, `Sales_Report_${new Date().toISOString().slice(0, 10)}.xlsx`);
+            showToast("Sales report exported to Excel!", "success");
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+            focusScannerInput();
+        }
+    </script>
+</body>
+</html>
