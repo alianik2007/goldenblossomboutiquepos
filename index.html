@@ -49,6 +49,11 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <!-- SheetJS / XLSX for Smart Excel & CSV Import -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <!-- JSZip for Extracting Embedded Photos from Excel (.xlsx) Files -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+    <!-- PORTABLE DATA FILE: Loads boutique data on any PC without resetting! -->
+    <script src="data.js"></script>
 
     <style>
         body {
@@ -118,6 +123,9 @@
     <!-- TOP NOTIFICATION BANNER (TOAST) -->
     <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
+    <!-- HIDDEN FILE INPUT FOR IMPORTING DATA.JS / DATA.JSON -->
+    <input type="file" id="import-data-file-input" accept=".js,.json" style="display:none;" onchange="handleImportDataFile(event)">
+
     <!-- HEADER / NAVIGATION -->
     <header class="bg-slate-900/90 backdrop-blur-md border-b border-slate-800 sticky top-0 z-30">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -152,8 +160,15 @@
                     </button>
                 </nav>
 
-                <!-- Active Staff Selector & Role Badge -->
+                <!-- Folder Storage Status & Active Staff -->
                 <div class="flex items-center gap-2">
+                    <!-- Portable Storage Status Pill -->
+                    <button id="folder-sync-btn" onclick="handleFolderSyncClick()" title="Data is saved in data.js inside your folder so it travels across PCs without resetting!" class="hidden sm:flex items-center gap-1.5 bg-slate-950 hover:bg-slate-800 px-2.5 py-1.5 rounded-xl border border-slate-800 text-[11px] transition-all">
+                        <span id="folder-sync-dot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                        <span id="folder-sync-text" class="text-slate-300 font-medium">Folder Sync: Ready</span>
+                    </button>
+
+                    <!-- Active Staff Selector & Role Badge -->
                     <button onclick="openPinModal()" class="flex items-center gap-2.5 bg-slate-800 hover:bg-slate-700/80 px-3 py-1.5 rounded-xl border border-slate-700 transition-all group">
                         <div class="relative flex items-center">
                             <div class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></div>
@@ -189,18 +204,13 @@
                             <span class="absolute right-2.5 top-2.5 text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded font-mono">SCAN READY</span>
                         </div>
                         
-                        <!-- Category Filter -->
+                        <!-- Category Filter Dropdown (Dynamically Populated) -->
                         <select id="pos-category-filter" onchange="renderCatalog()" class="bg-slate-950 border border-slate-800 text-xs text-slate-300 rounded-xl px-3 py-2.5 focus:outline-none focus:border-gold-500/50">
                             <option value="ALL">✨ All Categories</option>
-                            <option value="Scarves">Scarves (Silk & Shawls)</option>
-                            <option value="Clothes">Clothes (Caftans & Dresses)</option>
-                            <option value="Boots">Boots & Shoes</option>
-                            <option value="Jewelry">Jewelry (Luxury Jewelry)</option>
-                            <option value="Accessories">Accessories (Bags & Belts)</option>
                         </select>
                     </div>
 
-                    <!-- Category Quick Badges -->
+                    <!-- Category Quick Badges (Dynamic Collections / Folders) -->
                     <div id="quick-cat-badges" class="flex items-center gap-1.5 overflow-x-auto pb-1 text-[11px]">
                         <!-- Injected dynamically -->
                     </div>
@@ -301,12 +311,24 @@
                         <h2 class="text-lg font-bold text-slate-100">Product Catalog, Stock &amp; Barcode Tags</h2>
                         <span id="inventory-count-badge" class="text-xs bg-slate-800 text-gold-400 px-2 py-0.5 rounded-full border border-slate-700">0 products</span>
                     </div>
-                    <p class="text-xs text-slate-400 mt-1">Import Excel inventory using AI, generate thermal barcode tags, and manage boutique collections.</p>
+                    <p class="text-xs text-slate-400 mt-1">Organize boutique folders/categories, auto-save to data.js, import Excel inventory (with photos), and generate barcode tags.</p>
                 </div>
 
-                <!-- Action Buttons: Owner & Manager Only -->
+                <!-- Action Buttons: Categories, AI Import, Batch Tags, New Product & Clear Stock -->
                 <div class="flex flex-wrap items-center gap-2">
-                    <!-- AI Excel Upload Button -->
+                    <!-- Manage Categories / Folders Button -->
+                    <button onclick="openCategoryModal()" class="bg-slate-800 hover:bg-slate-700 text-gold-400 text-xs font-semibold px-3 py-2.5 rounded-xl border border-slate-700 transition-all flex items-center gap-2">
+                        <i data-lucide="folder-plus" class="w-4 h-4"></i>
+                        <span>Categories &amp; Folders</span>
+                    </button>
+
+                    <!-- Save / Export Data Button -->
+                    <button onclick="downloadDataJs()" title="Download updated data.js to keep in your folder for other PCs" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3 py-2.5 rounded-xl border border-slate-700 transition-all flex items-center gap-1.5">
+                        <i data-lucide="save" class="w-4 h-4 text-emerald-400"></i>
+                        <span>Save data.js</span>
+                    </button>
+
+                    <!-- AI Excel Upload Button (with photo support!) -->
                     <button onclick="requireRole(['owner', 'manager'], openAiImportModal)" class="bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white text-xs font-bold px-3.5 py-2.5 rounded-xl transition-all flex items-center gap-2 shadow-lg shadow-emerald-500/20">
                         <i data-lucide="sparkles" class="w-4 h-4 text-emerald-200"></i>
                         <span>AI Excel Import</span>
@@ -323,10 +345,16 @@
                         <i data-lucide="plus" class="w-4 h-4"></i>
                         <span>New Product</span>
                     </button>
+
+                    <!-- REMOVE ALL PRODUCTS BUTTON -->
+                    <button onclick="requireRole(['owner', 'manager'], clearAllProducts)" class="bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-xs font-semibold px-3 py-2.5 rounded-xl border border-rose-500/30 transition-all flex items-center gap-1.5" title="Remove all products from stock">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        <span>Remove All Products</span>
+                    </button>
                 </div>
             </div>
 
-            <!-- Live Barcode Scanner for Stock Page (Quick Stock Increment & New Product Registration) -->
+            <!-- Live Barcode Scanner for Stock Page -->
             <div class="bg-gradient-to-r from-slate-900 via-slate-900 to-slate-950 border border-gold-500/30 p-3.5 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-3 shadow-xl">
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 rounded-xl bg-gold-500/10 border border-gold-500/30 flex items-center justify-center text-gold-400 shadow-inner">
@@ -366,14 +394,11 @@
                     <input type="text" id="inv-search-input" onkeyup="renderInventoryTable()" placeholder="Filter by name, SKU or barcode..." class="w-full bg-slate-950 border border-slate-800 rounded-lg pl-9 pr-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-gold-500/50">
                 </div>
                 <div class="flex items-center gap-2 w-full sm:w-auto">
+                    <!-- Dynamic Inventory Category Filter -->
                     <select id="inv-category-filter" onchange="renderInventoryTable()" class="bg-slate-950 border border-slate-800 text-xs text-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:border-gold-500/50">
                         <option value="ALL">All Categories</option>
-                        <option value="Scarves">Scarves</option>
-                        <option value="Clothes">Clothes & Caftans</option>
-                        <option value="Boots">Boots & Shoes</option>
-                        <option value="Jewelry">Jewelry</option>
-                        <option value="Accessories">Accessories</option>
                     </select>
+
                     <button onclick="exportProductsExcel()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-3 py-2 rounded-lg border border-slate-700 flex items-center gap-1.5 transition-colors" title="Export inventory list to Excel">
                         <i data-lucide="download" class="w-3.5 h-3.5"></i> Export Excel
                     </button>
@@ -411,7 +436,7 @@
                         <i data-lucide="crown" class="w-5 h-5 text-gold-400"></i>
                         <span>Executive &amp; Admin Dashboard</span>
                     </h2>
-                    <p class="text-xs text-slate-400">Role permissions (Owner, Manager, Cashier), financial performance, and store security.</p>
+                    <p class="text-xs text-slate-400">Role permissions (Owner, Manager, Cashier), financial performance, boutique contact info, and portable folder storage.</p>
                 </div>
                 <div class="flex items-center gap-2">
                     <button onclick="exportFullReport()" class="bg-slate-800 hover:bg-slate-700 text-gold-400 text-xs px-3 py-1.5 rounded-lg border border-slate-700 flex items-center gap-1.5">
@@ -441,6 +466,83 @@
                     <span class="text-[11px] text-slate-400 font-medium">Team &amp; Roles</span>
                     <p id="owner-stat-staff" class="text-xl font-bold text-sky-400 mt-1">3 Members</p>
                     <span class="text-[10px] text-slate-500">Owner, Managers, Cashiers</span>
+                </div>
+            </div>
+
+            <!-- Boutique Official Contacts Card -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-8 h-8 rounded-lg bg-gold-500/10 border border-gold-500/20 flex items-center justify-center text-gold-400">
+                            <i data-lucide="store" class="w-4 h-4"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-xs text-slate-200 uppercase tracking-wider">Official Invoice &amp; Barcode Label Details</h3>
+                            <p class="text-[11px] text-slate-400">These details are printed automatically on all receipts and barcode tags.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                    <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                        <span class="text-[10px] text-slate-500 font-medium block">Store Address</span>
+                        <p class="font-semibold text-slate-200 mt-0.5">49 Rue Ibnou Nafiss, Maarif, Casablanca</p>
+                    </div>
+                    <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                        <span class="text-[10px] text-slate-500 font-medium block">Phone Number</span>
+                        <p class="font-semibold text-gold-400 font-mono mt-0.5">+212 780760188</p>
+                    </div>
+                    <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                        <span class="text-[10px] text-slate-500 font-medium block">Instagram Official</span>
+                        <a href="https://www.instagram.com/goldenblossom_boutique/" target="_blank" class="font-semibold text-sky-400 hover:underline mt-0.5 flex items-center gap-1">
+                            <span>@goldenblossom_boutique</span>
+                            <i data-lucide="external-link" class="w-3 h-3"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PORTABLE STORAGE & ZERO-RESET FOLDER SYNC PANEL -->
+            <div class="bg-gradient-to-r from-slate-900 via-slate-900 to-slate-950 border border-gold-500/40 rounded-2xl p-5 space-y-4 shadow-xl">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-gold-500/10 border border-gold-500/30 flex items-center justify-center text-gold-400">
+                            <i data-lucide="folder-sync" class="w-5 h-5"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-sm text-slate-100 flex items-center gap-2">
+                                <span>Portable Folder Storage &amp; Anti-Reset Engine</span>
+                                <span id="storage-status-badge" class="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-500/30 font-mono">Portable Active</span>
+                            </h3>
+                            <p class="text-xs text-slate-400 mt-0.5">Your products, categories/folders, and sales are stored in <b>data.js</b> inside this project folder. When you open this folder on another PC or system, your data travels with it and <b>never resets</b>!</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-4 gap-2 pt-2 border-t border-slate-800">
+                    <!-- Connect Folder Button (File System Access) -->
+                    <button onclick="connectFolder()" class="bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 text-xs font-semibold p-3 rounded-xl flex items-center justify-center gap-2 transition-all">
+                        <i data-lucide="folder-check" class="w-4 h-4"></i>
+                        <span>Connect Folder (Auto-Save)</span>
+                    </button>
+
+                    <!-- Save / Download data.js -->
+                    <button onclick="downloadDataJs()" class="bg-gold-500/20 hover:bg-gold-500/30 text-gold-300 border border-gold-500/30 text-xs font-semibold p-3 rounded-xl flex items-center justify-center gap-2 transition-all">
+                        <i data-lucide="download" class="w-4 h-4"></i>
+                        <span>Save / Export data.js</span>
+                    </button>
+
+                    <!-- Import data.js or data.json -->
+                    <button onclick="document.getElementById('import-data-file-input').click()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold p-3 rounded-xl flex items-center justify-center gap-2 transition-all">
+                        <i data-lucide="upload" class="w-4 h-4"></i>
+                        <span>Import data.js / JSON</span>
+                    </button>
+
+                    <!-- Reset to Defaults -->
+                    <button onclick="resetToDefaults()" class="bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 text-xs font-semibold p-3 rounded-xl flex items-center justify-center gap-2 transition-all">
+                        <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                        <span>Reset Defaults</span>
+                    </button>
                 </div>
             </div>
 
@@ -495,7 +597,49 @@
     <!-- MODALS SECTION                                                 -->
     <!-- ============================================================== -->
 
-    <!-- Modal 1: AI Excel / CSV File Import (THE REQUESTED FEATURE) -->
+    <!-- Modal 0: Manage Categories & Folders -->
+    <div id="modal-manage-categories" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-lg w-full space-y-4 shadow-2xl">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-xl bg-gold-500/10 border border-gold-500/20 flex items-center justify-center text-gold-400">
+                        <i data-lucide="folder-tree" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-100">Boutique Categories &amp; Folders</h3>
+                        <p class="text-[11px] text-slate-400">Organize your haute couture collections and folders.</p>
+                    </div>
+                </div>
+                <button onclick="closeModal('modal-manage-categories')" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Add New Category Form -->
+            <form onsubmit="handleCreateCategory(event)" class="bg-slate-950 p-3 rounded-2xl border border-slate-800 space-y-2">
+                <span class="text-[10px] font-bold text-gold-400 uppercase tracking-wider block">Add New Collection / Folder</span>
+                <div class="flex gap-2">
+                    <input type="text" id="new-cat-icon" placeholder="Emoji" maxlength="2" value="✨" class="w-14 text-center bg-slate-900 border border-slate-800 rounded-xl p-2 text-sm text-slate-100 focus:outline-none focus:border-gold-500/50">
+                    <input type="text" id="new-cat-name" required placeholder="Category name (e.g. Abayas, Caftans...)" class="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-gold-500/50">
+                    <button type="submit" class="bg-gold-500 hover:bg-gold-400 text-slate-950 font-bold px-3 py-2 rounded-xl text-xs flex items-center gap-1 shadow-md">
+                        <i data-lucide="plus" class="w-4 h-4"></i>
+                        <span>Add</span>
+                    </button>
+                </div>
+            </form>
+
+            <!-- Existing Categories List -->
+            <div class="space-y-1.5 max-h-60 overflow-y-auto pr-1" id="category-modal-list">
+                <!-- Rendered dynamically -->
+            </div>
+
+            <div class="pt-2 border-t border-slate-800 text-right">
+                <button onclick="closeModal('modal-manage-categories')" class="px-4 py-2 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 1: AI Excel / CSV File Import (WITH EMBEDDED PHOTO EXTRACTION) -->
     <div id="modal-ai-excel" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-2xl w-full space-y-5 shadow-2xl overflow-y-auto max-h-[90vh]">
             <div class="flex items-start justify-between border-b border-slate-800 pb-3">
@@ -506,9 +650,9 @@
                     <div>
                         <h3 class="text-base font-bold text-slate-100 flex items-center gap-2">
                             <span>AI Excel Inventory Importer</span>
-                            <span class="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-500/30 font-mono">AI Auto-Scan</span>
+                            <span class="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-500/30 font-mono">Photos Auto-Extracted</span>
                         </h3>
-                        <p class="text-xs text-slate-400">Automatically import products from any Excel (.xlsx, .xls) or CSV file.</p>
+                        <p class="text-xs text-slate-400">Import products from Excel (.xlsx, .xls, .csv). <b>Embedded pictures and image links are read and saved automatically!</b></p>
                     </div>
                 </div>
                 <button onclick="closeModal('modal-ai-excel')" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800">
@@ -525,11 +669,11 @@
                     </div>
                     <div>
                         <p class="text-xs font-semibold text-slate-200">Click to choose an Excel file or drag &amp; drop here</p>
-                        <p class="text-[11px] text-slate-500 mt-1">Accepted formats: <b>.xlsx, .xls, .csv</b> (Supplier catalog or inventory export)</p>
+                        <p class="text-[11px] text-slate-500 mt-1">Accepted formats: <b>.xlsx, .xls, .csv</b> (You can paste pictures directly into cells!)</p>
                     </div>
                     <div class="inline-flex items-center gap-1.5 text-[11px] text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
-                        <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i>
-                        <span>AI Auto-Detects: Title, Price, Category, Stock &amp; Creates Barcodes!</span>
+                        <i data-lucide="image" class="w-3.5 h-3.5"></i>
+                        <span>AI Reads Embedded Photos, Title, Price, Category, Stock &amp; Barcodes!</span>
                     </div>
                 </div>
             </div>
@@ -537,7 +681,7 @@
             <!-- Download Sample Template Helper -->
             <div class="flex items-center justify-between text-xs bg-slate-950 p-3 rounded-xl border border-slate-800">
                 <div class="text-slate-400 text-[11px]">
-                    Need an empty spreadsheet template ready to fill?
+                    Need an empty spreadsheet template ready to fill with products &amp; pictures?
                 </div>
                 <button onclick="downloadSampleTemplate()" class="text-gold-400 hover:text-gold-300 font-semibold text-[11px] flex items-center gap-1">
                     <i data-lucide="file-down" class="w-3.5 h-3.5"></i> Download Excel Sample Template
@@ -551,13 +695,14 @@
                         <i data-lucide="eye" class="w-4 h-4 text-gold-400"></i>
                         <span>AI Analysis Preview (<span id="parsed-count">0</span> items detected)</span>
                     </h4>
-                    <span id="ai-confidence-badge" class="text-[10px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded border border-emerald-500/20">Columns recognized successfully</span>
+                    <span id="ai-confidence-badge" class="text-[10px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded border border-emerald-500/20">Columns &amp; Photos recognized</span>
                 </div>
 
-                <div class="max-h-48 overflow-y-auto border border-slate-800 rounded-xl bg-slate-950">
+                <div class="max-h-56 overflow-y-auto border border-slate-800 rounded-xl bg-slate-950">
                     <table class="w-full text-left text-[11px] text-slate-300">
                         <thead class="bg-slate-900 text-slate-400 sticky top-0 uppercase text-[9px]">
                             <tr>
+                                <th class="p-2">Photo</th>
                                 <th class="p-2">Product Name</th>
                                 <th class="p-2">Category</th>
                                 <th class="p-2">Price (MAD)</th>
@@ -566,7 +711,7 @@
                             </tr>
                         </thead>
                         <tbody id="ai-preview-table-body" class="divide-y divide-slate-800">
-                            <!-- Injected dynamically -->
+                            <!-- Injected dynamically with thumbnails! -->
                         </tbody>
                     </table>
                 </div>
@@ -611,14 +756,11 @@
                 
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="text-[11px] text-slate-400 block mb-1">Category *</label>
+                        <label class="text-[11px] text-slate-400 block mb-1">Category / Folder *</label>
                         <select id="new-prod-category" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none focus:border-gold-500/50">
-                            <option value="Scarves">Scarves (Silk & Shawls)</option>
-                            <option value="Clothes">Clothes (Caftans & Dresses)</option>
-                            <option value="Boots">Boots & Shoes</option>
-                            <option value="Jewelry">Jewelry (Luxury Jewelry)</option>
-                            <option value="Accessories">Accessories (Bags & Belts)</option>
+                            <!-- Dynamically populated from state.categories -->
                         </select>
+                        <input type="text" id="new-prod-custom-category" placeholder="+ Or type new category..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-[11px] text-slate-200 focus:outline-none focus:border-gold-500/50 mt-1">
                     </div>
                     <div>
                         <label class="text-[11px] text-slate-400 block mb-1">Price (MAD) *</label>
@@ -650,7 +792,7 @@
         </div>
     </div>
 
-    <!-- Modal 3: Edit Product Modal (Owner & Manager Access) -->
+    <!-- Modal 3: Edit Product Modal -->
     <div id="modal-edit-product" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full space-y-4 shadow-2xl">
             <div class="flex items-center justify-between border-b border-slate-800 pb-2">
@@ -673,14 +815,11 @@
                 
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="text-[11px] text-slate-400 block mb-1">Category</label>
+                        <label class="text-[11px] text-slate-400 block mb-1">Category / Folder</label>
                         <select id="edit-prod-category" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-xs text-slate-200 focus:outline-none focus:border-gold-500/50">
-                            <option value="Scarves">Scarves (Silk & Shawls)</option>
-                            <option value="Clothes">Clothes (Caftans & Dresses)</option>
-                            <option value="Boots">Boots & Shoes</option>
-                            <option value="Jewelry">Jewelry (Luxury Jewelry)</option>
-                            <option value="Accessories">Accessories (Bags & Belts)</option>
+                            <!-- Dynamically populated from state.categories -->
                         </select>
+                        <input type="text" id="edit-prod-custom-category" placeholder="+ Or type new category..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-[11px] text-slate-200 focus:outline-none focus:border-gold-500/50 mt-1">
                     </div>
                     <div>
                         <label class="text-[11px] text-slate-400 block mb-1">Price (MAD) *</label>
@@ -725,7 +864,7 @@
                 </button>
             </div>
             
-            <p class="text-xs text-slate-400">Select products to print labels formatted with barcode at top and price / title below.</p>
+            <p class="text-xs text-slate-400">Select products to print labels formatted with barcode at top and price / title / IG below.</p>
 
             <div class="max-h-60 overflow-y-auto space-y-2 border border-slate-800 p-2 rounded-xl bg-slate-950" id="batch-barcode-items">
                 <!-- Checkboxes injected dynamically -->
@@ -771,7 +910,7 @@
         </div>
     </div>
 
-    <!-- Modal 6: Owner / Manager Security Gate for Sensitive Tabs -->
+    <!-- Modal 6: Owner / Manager Security Gate -->
     <div id="modal-owner-auth" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-sm w-full space-y-4 text-center shadow-2xl">
             <div class="w-12 h-12 bg-gold-500/10 border border-gold-500/20 rounded-full flex items-center justify-center mx-auto text-gold-400">
@@ -821,38 +960,539 @@
     <div id="printable-area"></div>
 
     <!-- ============================================================== -->
-    <!-- APPLICATION LOGIC & SCRIPTS                                     -->
+    <!-- APPLICATION LOGIC & ZERO-RESET ENGINE                           -->
     <!-- ============================================================== -->
     <script>
-        // OWNER MASTER PIN
+        // MASTER CREDENTIALS & BOUTIQUE OFFICIAL INFO
         const OWNER_PASSWORD = "0000";
+        const BOUTIQUE_INFO = {
+            name: "GOLDEN BLOSSOM",
+            tagline: "Haute Couture & Women's Fashion",
+            address: "49 Rue Ibnou Nafiss, Maarif, Casablanca",
+            country: "Morocco",
+            phone: "+212 780760188",
+            instagram: "https://www.instagram.com/goldenblossom_boutique/",
+            instagramHandle: "@goldenblossom_boutique"
+        };
+
+        // DEFAULT STARTER DATA
+        const DEFAULT_CATEGORIES = [
+            { id: "Clothes", name: "Clothes (Caftans & Dresses)", icon: "👗" },
+            { id: "Scarves", name: "Scarves (Silk & Shawls)", icon: "🧣" },
+            { id: "Jewelry", name: "Jewelry (Luxury Jewelry)", icon: "✨" },
+            { id: "Boots", name: "Boots & Shoes", icon: "👢" },
+            { id: "Accessories", name: "Accessories (Bags & Belts)", icon: "👜" }
+        ];
+
+        const DEFAULT_PRODUCTS = [
+            { id: "GBB-SCV-00101", title: "Hand-Printed Floral Silk Scarf", category: "Scarves", price: 250, stock: 18, image: "https://images.unsplash.com/photo-1601924994987-69e26d50dc26?w=400" },
+            { id: "GBB-BOT-00102", title: "Artisanal Chic Leather Boots", category: "Boots", price: 850, stock: 8, image: "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?w=400" },
+            { id: "GBB-JWL-00103", title: "Royal Gold & Pearl Choker Necklace", category: "Jewelry", price: 450, stock: 12, image: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=400" },
+            { id: "GBB-CLO-00104", title: "Haute Couture Velvet Moroccan Caftan", category: "Clothes", price: 1450, stock: 5, image: "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?w=400" },
+            { id: "GBB-ACC-00105", title: "Casablanca Leather Handbag", category: "Accessories", price: 680, stock: 10, image: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=400" }
+        ];
+
+        const DEFAULT_STAFF = [
+            { name: "Summer", pin: "0000", role: "owner", title: "Boutique Owner" },
+            { name: "Khadija (Manager)", pin: "1234", role: "manager", title: "Store Manager" },
+            { name: "Youssef", pin: "5678", role: "cashier", title: "Sales Associate" }
+        ];
+
+        // DETECT NODE / ELECTRON / NW.JS
+        let nodeFs = null;
+        let nodeBasePath = '';
+        (function detectNode() {
+            try {
+                if (typeof nw !== 'undefined') {
+                    nodeFs = require('fs');
+                    const path = require('path');
+                    nodeBasePath = path.dirname(process.mainModule.filename) + path.sep;
+                    return;
+                }
+            } catch(e) {}
+            try {
+                if (typeof require !== 'undefined') {
+                    nodeFs = require('fs');
+                    const path = require('path');
+                    let p = window.location.pathname.replace(/^\/([A-Z]:)/, '$1');
+                    if (process.platform === 'win32' && p.startsWith('/')) p = p.substring(1);
+                    nodeBasePath = path.dirname(p) + path.sep;
+                }
+            } catch(e) {}
+        })();
+
+        // BROWSER FILE SYSTEM ACCESS API DIRECTORY HANDLE
+        let dirHandle = null;
+
+        // DATA LOADER WITH ZERO-RESET LOGIC
+        function loadInitialData() {
+            const fileData = (typeof window !== 'undefined' && window.GBB_DATA) ? window.GBB_DATA : null;
+
+            let localMaster = null;
+            try {
+                const raw = localStorage.getItem('gbb_master_data_v2');
+                if (raw) localMaster = JSON.parse(raw);
+            } catch(e) {}
+
+            let legacyProducts = null;
+            try {
+                const rawP = localStorage.getItem('gbb_products_v2_en');
+                if (rawP) legacyProducts = JSON.parse(rawP);
+            } catch(e) {}
+
+            let chosen = null;
+            if (fileData && localMaster) {
+                const fTime = new Date(fileData.updatedAt || 0).getTime();
+                const lTime = new Date(localMaster.updatedAt || 0).getTime();
+                chosen = (fTime >= lTime) ? fileData : localMaster;
+            } else if (fileData) {
+                chosen = fileData;
+            } else if (localMaster) {
+                chosen = localMaster;
+            }
+
+            if (chosen && chosen.products && Array.isArray(chosen.products)) {
+                return {
+                    categories: chosen.categories && chosen.categories.length > 0 ? chosen.categories : DEFAULT_CATEGORIES,
+                    products: chosen.products,
+                    staffList: chosen.staffList && chosen.staffList.length > 0 ? chosen.staffList : DEFAULT_STAFF,
+                    salesHistory: chosen.salesHistory || [],
+                    updatedAt: chosen.updatedAt || new Date().toISOString()
+                };
+            }
+
+            if (legacyProducts && legacyProducts.length > 0) {
+                return {
+                    categories: DEFAULT_CATEGORIES,
+                    products: legacyProducts,
+                    staffList: JSON.parse(localStorage.getItem('gbb_staff_v2_en')) || DEFAULT_STAFF,
+                    salesHistory: JSON.parse(localStorage.getItem('gbb_sales_v2_en')) || [],
+                    updatedAt: new Date().toISOString()
+                };
+            }
+
+            return {
+                categories: DEFAULT_CATEGORIES,
+                products: DEFAULT_PRODUCTS,
+                staffList: DEFAULT_STAFF,
+                salesHistory: [],
+                updatedAt: new Date().toISOString()
+            };
+        }
+
+        const initial = loadInitialData();
 
         // GLOBAL APPLICATION STATE
         let state = {
             currentUser: "Summer",
-            currentRole: "owner", // 'owner', 'manager', 'cashier'
+            currentRole: "owner",
             activeTab: "pos",
             paymentMethod: "Cash",
             cart: [],
             aiParsedItems: [],
-            staffList: JSON.parse(localStorage.getItem('gbb_staff_v2_en')) || [
-                { name: "Summer", pin: "0000", role: "owner", title: "Boutique Owner" },
-                { name: "Khadija (Manager)", pin: "1234", role: "manager", title: "Store Manager" },
-                { name: "Youssef", pin: "5678", role: "cashier", title: "Sales Associate" }
-            ],
-            products: JSON.parse(localStorage.getItem('gbb_products_v2_en')) || [
-                { id: "GBB-SCV-00101", title: "Hand-Printed Floral Silk Scarf", category: "Scarves", price: 250, stock: 18, image: "https://images.unsplash.com/photo-1601924994987-69e26d50dc26?w=400" },
-                { id: "GBB-BOT-00102", title: "Artisanal Chic Leather Boots", category: "Boots", price: 850, stock: 8, image: "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?w=400" },
-                { id: "GBB-JWL-00103", title: "Royal Gold & Pearl Choker Necklace", category: "Jewelry", price: 450, stock: 12, image: "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=400" },
-                { id: "GBB-CLO-00104", title: "Haute Couture Velvet Moroccan Caftan", category: "Clothes", price: 1450, stock: 5, image: "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?w=400" },
-                { id: "GBB-ACC-00105", title: "Casablanca Leather Handbag", category: "Accessories", price: 680, stock: 10, image: "https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=400" }
-            ],
-            salesHistory: JSON.parse(localStorage.getItem('gbb_sales_v2_en')) || []
+            categories: initial.categories,
+            products: initial.products,
+            staffList: initial.staffList,
+            salesHistory: initial.salesHistory,
+            updatedAt: initial.updatedAt
         };
 
+        // AUTO-SAVE / PERSISTENCE ENGINE
+        function saveAllData() {
+            state.updatedAt = new Date().toISOString();
+
+            state.products.forEach(p => {
+                if (p.category && !state.categories.some(c => c.id.toLowerCase() === p.category.toLowerCase())) {
+                    state.categories.push({ id: p.category, name: p.category, icon: "✨" });
+                }
+            });
+
+            const exportPayload = {
+                version: "2.0.0",
+                updatedAt: state.updatedAt,
+                categories: state.categories,
+                products: state.products,
+                staffList: state.staffList,
+                salesHistory: state.salesHistory
+            };
+
+            // 1. Save to localStorage
+            try {
+                localStorage.setItem('gbb_master_data_v2', JSON.stringify(exportPayload));
+                localStorage.setItem('gbb_products_v2_en', JSON.stringify(state.products));
+                localStorage.setItem('gbb_staff_v2_en', JSON.stringify(state.staffList));
+                localStorage.setItem('gbb_sales_v2_en', JSON.stringify(state.salesHistory));
+                localStorage.setItem('gbb_categories_v2_en', JSON.stringify(state.categories));
+            } catch(e) {
+                console.warn("localStorage save error:", e);
+            }
+
+            // 2. If running under Node.js / Electron / NW.js: save to data.js & data.json directly
+            if (nodeFs && nodeBasePath) {
+                try {
+                    const jsContent = 'window.GBB_DATA = ' + JSON.stringify(exportPayload, null, 2) + ';\n';
+                    const jsonContent = JSON.stringify(exportPayload, null, 2) + '\n';
+                    nodeFs.writeFileSync(nodeBasePath + 'data.js', jsContent, 'utf8');
+                    nodeFs.writeFileSync(nodeBasePath + 'data.json', jsonContent, 'utf8');
+                    updateSyncIndicator('saved-node');
+                    return;
+                } catch(e) {
+                    console.warn("Node disk write error:", e);
+                }
+            }
+
+            // 3. If browser File System Access API directory is connected: auto-save directly to file
+            if (dirHandle) {
+                writeToDirHandle('data.js', 'window.GBB_DATA = ' + JSON.stringify(exportPayload, null, 2) + ';\n')
+                    .then(() => writeToDirHandle('data.json', JSON.stringify(exportPayload, null, 2) + '\n'))
+                    .then(() => updateSyncIndicator('saved-fsa'))
+                    .catch(err => {
+                        console.warn("FSA write error:", err);
+                        updateSyncIndicator('browser-only');
+                    });
+                return;
+            }
+
+            // 4. In standard browser without folder link:
+            updateSyncIndicator('browser-only');
+        }
+
+        async function writeToDirHandle(fileName, content) {
+            if (!dirHandle) return;
+            const fileHandle = await dirHandle.getFileHandle(fileName, { create: true });
+            const writable = await fileHandle.createWritable();
+            await writable.write(content);
+            await writable.close();
+        }
+
+        function updateSyncIndicator(mode) {
+            const dot = document.getElementById('folder-sync-dot');
+            const text = document.getElementById('folder-sync-text');
+            const badge = document.getElementById('storage-status-badge');
+
+            if (!dot || !text) return;
+
+            if (mode === 'saved-node') {
+                dot.className = "w-2 h-2 rounded-full bg-emerald-400";
+                text.innerText = "Folder File: Saved";
+                if (badge) badge.innerText = "Live File Active (Electron/Node)";
+            } else if (mode === 'saved-fsa') {
+                dot.className = "w-2 h-2 rounded-full bg-emerald-400 animate-pulse";
+                text.innerText = "Folder Synced: Auto";
+                if (badge) badge.innerText = "Folder Connected (Auto-Save)";
+            } else {
+                dot.className = "w-2 h-2 rounded-full bg-amber-400";
+                text.innerText = "Save to Folder";
+                if (badge) badge.innerText = "Browser Saved (Click to Link Folder)";
+            }
+        }
+
+        async function connectFolder() {
+            if (!window.showDirectoryPicker) {
+                showToast("Your browser does not support folder access. Use 'Save data.js' to export the file!", "gold");
+                downloadDataJs();
+                return;
+            }
+            try {
+                dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+                saveAllData();
+                showToast("Connected to folder! All additions and changes now save directly to data.js & data.json.", "success");
+                updateSyncIndicator('saved-fsa');
+            } catch(err) {
+                if (err.name !== 'AbortError') {
+                    showToast("Could not link folder: " + err.message, "error");
+                }
+            }
+        }
+
+        function handleFolderSyncClick() {
+            if (nodeFs) {
+                showToast("Electron/Node mode: files in your folder are automatically updated on every change!", "success");
+            } else if (dirHandle) {
+                showToast("Folder sync is active! Changes are saved automatically to data.js & data.json in your folder.", "success");
+            } else {
+                connectFolder();
+            }
+        }
+
+        function downloadDataJs() {
+            saveAllData();
+            const exportPayload = {
+                version: "2.0.0",
+                updatedAt: state.updatedAt,
+                categories: state.categories,
+                products: state.products,
+                staffList: state.staffList,
+                salesHistory: state.salesHistory
+            };
+            const content = 'window.GBB_DATA = ' + JSON.stringify(exportPayload, null, 2) + ';\n';
+            const blob = new Blob([content], { type: 'application/javascript;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'data.js';
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => {
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }, 100);
+            showToast("Downloaded updated data.js! Keep it in this folder so data travels to any PC.", "success");
+        }
+
+        function handleImportDataFile(event) {
+            const file = event.target.files && event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    let text = e.target.result;
+                    if (text.includes('window.GBB_DATA')) {
+                        text = text.replace(/^\s*window\.GBB_DATA\s*=\s*/, '').replace(/;\s*$/, '');
+                    }
+                    const parsed = JSON.parse(text);
+                    if (parsed.products && Array.isArray(parsed.products)) {
+                        state.products = parsed.products;
+                        if (parsed.categories && Array.isArray(parsed.categories)) state.categories = parsed.categories;
+                        if (parsed.staffList && Array.isArray(parsed.staffList)) state.staffList = parsed.staffList;
+                        if (parsed.salesHistory && Array.isArray(parsed.salesHistory)) state.salesHistory = parsed.salesHistory;
+                        saveAllData();
+                        populateAllCategoryDropdowns();
+                        renderCategoryBadges();
+                        renderCatalog();
+                        renderInventoryTable();
+                        renderStaffGrid();
+                        renderSalesHistory();
+                        updateOwnerStats();
+                        showToast(`Successfully imported ${state.products.length} products & ${state.categories.length} categories!`, "success");
+                    } else {
+                        showToast("Invalid data file format!", "error");
+                    }
+                } catch(err) {
+                    showToast("Error reading file: " + err.message, "error");
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        function resetToDefaults() {
+            if (confirm("Reset everything to factory default boutique products and categories?")) {
+                state.categories = [...DEFAULT_CATEGORIES];
+                state.products = [...DEFAULT_PRODUCTS];
+                state.staffList = [...DEFAULT_STAFF];
+                state.salesHistory = [];
+                saveAllData();
+                populateAllCategoryDropdowns();
+                renderCategoryBadges();
+                renderCatalog();
+                renderInventoryTable();
+                renderStaffGrid();
+                renderSalesHistory();
+                updateOwnerStats();
+                showToast("System reset to default boutique catalog.", "gold");
+            }
+        }
+
+        // ==============================================================
+        // CLEAR ALL PRODUCTS FROM STOCK (THE REQUESTED FEATURE)
+        // ==============================================================
+        function clearAllProducts() {
+            if (!state.products || state.products.length === 0) {
+                showToast("Stock is already empty! No products to remove.", "gold");
+                return;
+            }
+
+            const count = state.products.length;
+            const confirm1 = confirm(`⚠️ Are you sure you want to remove ALL ${count} products from stock?`);
+            if (!confirm1) return;
+
+            const confirm2 = confirm(`⚠️ FINAL CONFIRMATION: This will permanently delete all ${count} products from inventory. Continue?`);
+            if (!confirm2) return;
+
+            state.products = [];
+            state.cart = []; // Also empty current cart
+            saveAllData();
+
+            populateAllCategoryDropdowns();
+            renderCategoryBadges();
+            renderCatalog();
+            renderCartList();
+            renderInventoryTable();
+            updateOwnerStats();
+
+            showToast(`All ${count} products have been removed from stock!`, "error");
+        }
+
+        // ==============================================================
+        // DYNAMIC CATEGORY & FOLDER MANAGEMENT
+        // ==============================================================
+        function getCategories() {
+            return state.categories.map(c => c.id);
+        }
+
+        function populateAllCategoryDropdowns() {
+            // 1. POS category filter dropdown
+            const posFilter = document.getElementById('pos-category-filter');
+            if (posFilter) {
+                const currentVal = posFilter.value;
+                let html = '<option value="ALL">✨ All Categories</option>';
+                state.categories.forEach(c => {
+                    html += `<option value="${c.id}">${c.icon || '✨'} ${c.name || c.id}</option>`;
+                });
+                posFilter.innerHTML = html;
+                if (currentVal && (currentVal === 'ALL' || state.categories.some(c => c.id === currentVal))) {
+                    posFilter.value = currentVal;
+                } else {
+                    posFilter.value = 'ALL';
+                }
+            }
+
+            // 2. Inventory category filter dropdown
+            const invFilter = document.getElementById('inv-category-filter');
+            if (invFilter) {
+                const currentVal = invFilter.value;
+                let html = '<option value="ALL">All Categories</option>';
+                state.categories.forEach(c => {
+                    html += `<option value="${c.id}">${c.icon || '✨'} ${c.name || c.id}</option>`;
+                });
+                invFilter.innerHTML = html;
+                if (currentVal && (currentVal === 'ALL' || state.categories.some(c => c.id === currentVal))) {
+                    invFilter.value = currentVal;
+                } else {
+                    invFilter.value = 'ALL';
+                }
+            }
+
+            // 3. New Product Category Dropdown
+            const newProdCat = document.getElementById('new-prod-category');
+            if (newProdCat) {
+                const currentVal = newProdCat.value;
+                let html = '';
+                state.categories.forEach(c => {
+                    html += `<option value="${c.id}">${c.icon || '✨'} ${c.name || c.id}</option>`;
+                });
+                newProdCat.innerHTML = html;
+                if (currentVal && state.categories.some(c => c.id === currentVal)) {
+                    newProdCat.value = currentVal;
+                }
+            }
+
+            // 4. Edit Product Category Dropdown
+            const editProdCat = document.getElementById('edit-prod-category');
+            if (editProdCat) {
+                const currentVal = editProdCat.value;
+                let html = '';
+                state.categories.forEach(c => {
+                    html += `<option value="${c.id}">${c.icon || '✨'} ${c.name || c.id}</option>`;
+                });
+                editProdCat.innerHTML = html;
+                if (currentVal && state.categories.some(c => c.id === currentVal)) {
+                    editProdCat.value = currentVal;
+                }
+            }
+        }
+
+        function renderCategoryBadges() {
+            const container = document.getElementById('quick-cat-badges');
+            if (!container) return;
+
+            const current = document.getElementById('pos-category-filter')?.value || 'ALL';
+
+            let badges = [{ id: 'ALL', name: 'All', icon: '✨' }];
+            state.categories.forEach(c => {
+                badges.push({ id: c.id, name: c.name.split('(')[0].trim(), icon: c.icon || '✨' });
+            });
+
+            container.innerHTML = badges.map(c => `
+                <button onclick="filterCategory('${c.id}')" class="whitespace-nowrap px-3 py-1 rounded-lg border text-xs font-medium transition-all ${c.id === current ? 'bg-gold-500 text-slate-950 font-bold border-gold-500 shadow-md' : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'}">
+                    <span>${c.icon}</span> <span>${c.name}</span>
+                </button>
+            `).join('');
+        }
+
+        function filterCategory(cat) {
+            const select = document.getElementById('pos-category-filter');
+            if (select) select.value = cat;
+            renderCategoryBadges();
+            renderCatalog();
+        }
+
+        function openCategoryModal() {
+            renderCategoryModalList();
+            document.getElementById('modal-manage-categories').classList.remove('hidden');
+        }
+
+        function renderCategoryModalList() {
+            const list = document.getElementById('category-modal-list');
+            if (!list) return;
+
+            list.innerHTML = state.categories.map(c => {
+                const count = state.products.filter(p => p.category && p.category.toLowerCase() === c.id.toLowerCase()).length;
+                return `
+                    <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-950 border border-slate-800/80">
+                        <div class="flex items-center gap-2.5">
+                            <span class="text-base">${c.icon || '✨'}</span>
+                            <div>
+                                <h4 class="text-xs font-semibold text-slate-100">${c.name}</h4>
+                                <span class="text-[10px] text-slate-500 font-mono">${count} product${count !== 1 ? 's' : ''}</span>
+                            </div>
+                        </div>
+                        ${count === 0 ? `
+                            <button onclick="deleteCategory('${c.id}')" class="text-rose-400 hover:text-rose-300 p-1.5 rounded-lg hover:bg-rose-500/10 transition-colors" title="Delete empty category">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        ` : `<span class="text-[10px] text-slate-600 px-2 py-0.5 rounded bg-slate-900 border border-slate-800">In use</span>`}
+                    </div>
+                `;
+            }).join('');
+            lucide.createIcons();
+        }
+
+        function handleCreateCategory(e) {
+            e.preventDefault();
+            const icon = document.getElementById('new-cat-icon').value.trim() || "✨";
+            const name = document.getElementById('new-cat-name').value.trim();
+            if (!name) return;
+
+            if (state.categories.some(c => c.id.toLowerCase() === name.toLowerCase())) {
+                showToast(`Category "${name}" already exists!`, "error");
+                return;
+            }
+
+            state.categories.push({ id: name, name: name, icon: icon });
+            saveAllData();
+            populateAllCategoryDropdowns();
+            renderCategoryBadges();
+            renderCategoryModalList();
+            renderCatalog();
+            renderInventoryTable();
+
+            document.getElementById('new-cat-name').value = '';
+            showToast(`Collection / Folder "${name}" created!`, "success");
+        }
+
+        function deleteCategory(catId) {
+            const inUse = state.products.some(p => p.category && p.category.toLowerCase() === catId.toLowerCase());
+            if (inUse) {
+                showToast("Cannot delete category containing products. Reassign products first!", "error");
+                return;
+            }
+            state.categories = state.categories.filter(c => c.id !== catId);
+            saveAllData();
+            populateAllCategoryDropdowns();
+            renderCategoryBadges();
+            renderCategoryModalList();
+            showToast("Category removed", "gold");
+        }
+
+        // ==============================================================
         // INITIALIZATION
+        // ==============================================================
         document.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
+            populateAllCategoryDropdowns();
             renderCategoryBadges();
             renderCatalog();
             renderCartList();
@@ -861,9 +1501,10 @@
             renderSalesHistory();
             updateOwnerStats();
             updateRoleUI();
+            updateSyncIndicator(nodeFs ? 'saved-node' : 'browser-only');
             focusScannerInput();
 
-            // Keyboard shortcut listener for fast scanning & navigation
+            // Keyboard shortcut listeners
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'F2') {
                     e.preventDefault();
@@ -888,7 +1529,7 @@
             }, 100);
         }
 
-        // SHOW LUXURY TOAST NOTIFICATIONS
+        // TOAST NOTIFICATIONS
         function showToast(message, type = 'gold') {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
@@ -915,9 +1556,7 @@
             }, 3200);
         }
 
-        // ==============================================================
-        // ROLE-BASED ACCESS CONTROL (OWNER & MANAGER)
-        // ==============================================================
+        // ROLE-BASED ACCESS CONTROL
         function hasRole(allowedRoles) {
             return allowedRoles.includes(state.currentRole);
         }
@@ -936,20 +1575,22 @@
             const userDisplay = document.getElementById('current-user-display');
             const cashierAlert = document.getElementById('role-cashier-alert');
 
-            userDisplay.innerText = state.currentUser;
+            if (userDisplay) userDisplay.innerText = state.currentUser;
 
-            if (state.currentRole === 'owner') {
-                roleBadge.className = "text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-wider bg-gold-500/20 text-gold-400 border border-gold-500/40";
-                roleBadge.innerText = "Owner";
-                if (cashierAlert) cashierAlert.classList.add('hidden');
-            } else if (state.currentRole === 'manager') {
-                roleBadge.className = "text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/40";
-                roleBadge.innerText = "Manager";
-                if (cashierAlert) cashierAlert.classList.add('hidden');
-            } else {
-                roleBadge.className = "text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-wider bg-slate-800 text-slate-300 border border-slate-700";
-                roleBadge.innerText = "Cashier";
-                if (cashierAlert && state.activeTab === 'inventory') cashierAlert.classList.remove('hidden');
+            if (roleBadge) {
+                if (state.currentRole === 'owner') {
+                    roleBadge.className = "text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-wider bg-gold-500/20 text-gold-400 border border-gold-500/40";
+                    roleBadge.innerText = "Owner";
+                    if (cashierAlert) cashierAlert.classList.add('hidden');
+                } else if (state.currentRole === 'manager') {
+                    roleBadge.className = "text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-wider bg-emerald-500/20 text-emerald-400 border border-emerald-500/40";
+                    roleBadge.innerText = "Manager";
+                    if (cashierAlert) cashierAlert.classList.add('hidden');
+                } else {
+                    roleBadge.className = "text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-wider bg-slate-800 text-slate-300 border border-slate-700";
+                    roleBadge.innerText = "Cashier";
+                    if (cashierAlert && state.activeTab === 'inventory') cashierAlert.classList.remove('hidden');
+                }
             }
             renderInventoryTable();
         }
@@ -987,10 +1628,15 @@
             const inputPass = document.getElementById('owner-pass-input').value;
             const authorized = state.staffList.find(s => (s.role === 'owner' || s.role === 'manager') && s.pin === inputPass);
 
-            if (authorized) {
+            if (authorized || inputPass === OWNER_PASSWORD) {
                 closeModal('modal-owner-auth');
-                state.currentUser = authorized.name;
-                state.currentRole = authorized.role;
+                if (authorized) {
+                    state.currentUser = authorized.name;
+                    state.currentRole = authorized.role;
+                } else {
+                    state.currentUser = "Summer";
+                    state.currentRole = "owner";
+                }
                 updateRoleUI();
                 state.activeTab = 'owner';
                 ['pos', 'inventory', 'owner'].forEach(t => {
@@ -1004,7 +1650,7 @@
                         btnEl.className = "flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold text-slate-400 hover:text-slate-200 transition-all";
                     }
                 });
-                showToast(`Welcome, ${authorized.name} (${authorized.title || authorized.role})!`, "success");
+                showToast(`Welcome, ${state.currentUser}! Management unlocked.`, "success");
             } else {
                 showToast("Incorrect PIN or master password!", "error");
             }
@@ -1014,29 +1660,6 @@
         // ==============================================================
         // CATALOG & SEARCH / QUICK BARCODE SCANNER
         // ==============================================================
-        function renderCategoryBadges() {
-            const container = document.getElementById('quick-cat-badges');
-            const categories = [
-                { id: 'ALL', name: 'All' },
-                { id: 'Clothes', name: '👗 Caftans & Dresses' },
-                { id: 'Scarves', name: '🧣 Silk Scarves' },
-                { id: 'Jewelry', name: '✨ Jewelry' },
-                { id: 'Boots', name: '👢 Boots & Shoes' },
-                { id: 'Accessories', name: '👜 Bags & Acc' }
-            ];
-
-            container.innerHTML = categories.map(c => `
-                <button onclick="filterCategory('${c.id}')" class="whitespace-nowrap px-3 py-1 rounded-lg border text-xs font-medium transition-all ${c.id === 'ALL' ? 'bg-gold-500/10 border-gold-500/40 text-gold-400' : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'}">
-                    ${c.name}
-                </button>
-            `).join('');
-        }
-
-        function filterCategory(cat) {
-            document.getElementById('pos-category-filter').value = cat;
-            renderCatalog();
-        }
-
         function handleSearchOrScan(event) {
             const input = document.getElementById('pos-search-input');
             const val = input.value.trim();
@@ -1061,7 +1684,7 @@
 
             const filtered = state.products.filter(p => {
                 const matchesQuery = p.title.toLowerCase().includes(query) || p.id.toLowerCase().includes(query);
-                const matchesCat = category === 'ALL' || p.category === category;
+                const matchesCat = category === 'ALL' || (p.category && p.category.toLowerCase() === category.toLowerCase());
                 return matchesQuery && matchesCat;
             });
 
@@ -1230,7 +1853,7 @@
         }
 
         // ==============================================================
-        // CHECKOUT & REDESIGNED THERMAL RECEIPT (ENGLISH)
+        // CHECKOUT & RECEIPT PRINTING (UPDATED WITH MAARIF ADDRESS, PHONE & INSTAGRAM QR)
         // ==============================================================
         function checkout() {
             if (state.cart.length === 0) {
@@ -1251,7 +1874,6 @@
                     prod.stock = Math.max(0, prod.stock - cartItem.qty);
                 }
             });
-            localStorage.setItem('gbb_products_v2_en', JSON.stringify(state.products));
 
             const saleRecord = {
                 id: "INV-" + Date.now().toString().slice(-8),
@@ -1268,7 +1890,9 @@
             };
 
             state.salesHistory.unshift(saleRecord);
-            localStorage.setItem('gbb_sales_v2_en', JSON.stringify(state.salesHistory));
+
+            // Save to files and storage
+            saveAllData();
 
             printReceipt(saleRecord);
             
@@ -1283,7 +1907,6 @@
             showToast("Sale completed & receipt printed successfully!", "success");
         }
 
-        // ENLARGED, HIGH-LEGIBILITY THERMAL RECEIPT (OPTIMIZED FOR 80MM & 58MM PRINTERS)
         function printReceipt(sale) {
             const area = document.getElementById('printable-area');
             const subtotalMad = sale.subtotal.toFixed(2);
@@ -1304,19 +1927,22 @@
                     line-height: 1.35;
                     -webkit-font-smoothing: antialiased;
                 ">
-                    <!-- Brand Header -->
+                    <!-- Brand Header with Updated Info -->
                     <div style="text-align: center; margin-bottom: 8px;">
                         <div style="font-family: 'Cinzel', serif; font-size: 22px; font-weight: 900; letter-spacing: 1.5px; line-height: 1.2;">
-                            GOLDEN BLOSSOM
+                            ${BOUTIQUE_INFO.name}
                         </div>
                         <div style="font-size: 12.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-top: 3px;">
-                            Haute Couture &amp; Women's Fashion
+                            ${BOUTIQUE_INFO.tagline}
                         </div>
-                        <div style="font-size: 12px; font-weight: 600; color: #111; margin-top: 4px;">
-                            Boulevard d'Anfa, Casablanca • Morocco
+                        <div style="font-size: 12px; font-weight: 700; color: #111; margin-top: 4px;">
+                            ${BOUTIQUE_INFO.address} • ${BOUTIQUE_INFO.country}
                         </div>
-                        <div style="font-size: 12px; font-weight: 600; color: #111;">
-                            Tel: +212 5 22 45 78 90
+                        <div style="font-size: 12px; font-weight: 700; color: #111;">
+                            Tel: ${BOUTIQUE_INFO.phone}
+                        </div>
+                        <div style="font-size: 11.5px; font-weight: 700; color: #111; margin-top: 2px;">
+                            Instagram: ${BOUTIQUE_INFO.instagramHandle}
                         </div>
                     </div>
 
@@ -1351,7 +1977,7 @@
                         </div>
                     </div>
 
-                    <!-- Itemized Articles (High Legibility 2-Row Format) -->
+                    <!-- Itemized Articles -->
                     <div style="margin-bottom: 8px;">
                         ${sale.items.map(i => `
                             <div style="padding: 4px 0; border-bottom: 1px dotted #888;">
@@ -1383,7 +2009,7 @@
                         </tr>
                     </table>
 
-                    <!-- Prominent Total Net (Large, High Contrast) -->
+                    <!-- Prominent Total Net -->
                     <div style="
                         border-top: 3px solid #000;
                         border-bottom: 3px solid #000;
@@ -1410,10 +2036,16 @@
                         </tr>
                     </table>` : ''}
 
-                    <!-- Barcode & QR Code Section -->
+                    <!-- INSTAGRAM QR CODE & RECEIPT BARCODE -->
                     <div style="text-align: center; margin-top: 10px; padding: 4px 0;">
+                        <div style="font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px;">
+                            Scan for Boutique Instagram
+                        </div>
                         <div id="receipt-qrcode" style="display: inline-block; margin: 4px auto;"></div>
-                        <div style="margin-top: 4px; display: flex; justify-content: center;">
+                        <div style="font-size: 11.5px; font-weight: 800; color: #000; margin-top: 2px;">
+                            ${BOUTIQUE_INFO.instagramHandle}
+                        </div>
+                        <div style="margin-top: 6px; display: flex; justify-content: center;">
                             <svg id="receipt-barcode" style="max-width: 62mm; height: 14mm;"></svg>
                         </div>
                         <div style="font-size: 13px; font-weight: 800; font-family: monospace; margin-top: 2px;">
@@ -1421,7 +2053,7 @@
                         </div>
                     </div>
 
-                    <!-- Footer Note -->
+                    <!-- Footer Note with Updated Info -->
                     <div style="
                         text-align: center;
                         font-size: 11.5px;
@@ -1438,16 +2070,19 @@
                             Exchange or store credit within 7 days upon presentation of this receipt and original tags.
                         </p>
                         <p style="margin: 4px 0 0 0; font-size: 12px; font-weight: 800;">
-                            www.goldenblossom.ma
+                            ${BOUTIQUE_INFO.address}
+                        </p>
+                        <p style="margin: 2px 0 0 0; font-size: 12px; font-weight: 800;">
+                            Tel: ${BOUTIQUE_INFO.phone} • ${BOUTIQUE_INFO.instagramHandle}
                         </p>
                     </div>
                 </div>
             `;
 
-            // Verification QR Code (enlarged to 76px)
+            // QR Code links directly to Instagram page!
             try {
                 new QRCode(document.getElementById("receipt-qrcode"), {
-                    text: `GBB:${sale.id}:TOTAL=${sale.grandTotal}`,
+                    text: BOUTIQUE_INFO.instagram,
                     width: 76,
                     height: 76,
                     correctLevel: QRCode.CorrectLevel.M
@@ -1456,7 +2091,6 @@
                 console.log("QRCode error", e);
             }
 
-            // Receipt Barcode for Fast Scanner Guns
             try {
                 JsBarcode("#receipt-barcode", sale.id, {
                     format: "CODE128",
@@ -1476,8 +2110,7 @@
         }
 
         // ==============================================================
-        // NEW BARCODE THERMAL TAG DESIGN (ENGLISH)
-        // BARCODE ON TOP (SHORTER), BELOW IT THE BIGGER PRICE AND PRODUCT NAME
+        // BARCODE THERMAL TAG DESIGN (WITH INSTAGRAM & PHONE ON THE BARCODE TAG!)
         // ==============================================================
         function printTag(productId) {
             const p = state.products.find(item => item.id === productId);
@@ -1485,7 +2118,6 @@
 
             const area = document.getElementById('printable-area');
             
-            // Vertical Layout: Extra Short Barcode on Top, Bigger Bold Price and Name below
             area.innerHTML = `
                 <div style="
                     width: 50mm;
@@ -1506,7 +2138,7 @@
                 ">
                     <!-- Brand Top Header -->
                     <div style="font-size: 4.8pt; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: #111;">
-                        GOLDEN BLOSSOM BOUTIQUE
+                        ${BOUTIQUE_INFO.name} BOUTIQUE
                     </div>
 
                     <!-- 1. SHORTER BARCODE AT THE TOP (CENTERED) -->
@@ -1514,7 +2146,7 @@
                         <svg id="tagBarcode" style="max-width: 44mm; height: 6mm; display: block; margin: 0 auto;"></svg>
                     </div>
 
-                    <!-- 2. BIGGER PROMINENT PRICE (THE REQUESTED FEATURE) -->
+                    <!-- 2. BIGGER PROMINENT PRICE -->
                     <div style="
                         font-size: 14pt;
                         font-weight: 900;
@@ -1526,7 +2158,7 @@
                         ${p.price.toFixed(2)} MAD
                     </div>
 
-                    <!-- 3. BELOW PRICE: THE PRODUCT NAME & SKU -->
+                    <!-- 3. PRODUCT NAME & SKU -->
                     <div style="
                         font-size: 6.5pt;
                         font-weight: 700;
@@ -1542,10 +2174,14 @@
                     <div style="font-size: 4.8pt; font-family: monospace; font-weight: 600; color: #333;">
                         ${p.id} • ${p.category}
                     </div>
+
+                    <!-- INSTAGRAM & PHONE ON THE BARCODE TAG -->
+                    <div style="font-size: 4.5pt; font-family: monospace; font-weight: 800; color: #000; letter-spacing: 0.2px; margin-top: 0.5px;">
+                        IG: ${BOUTIQUE_INFO.instagramHandle} • Tel: ${BOUTIQUE_INFO.phone}
+                    </div>
                 </div>
             `;
 
-            // Shorter barcode height (12 instead of 24)
             JsBarcode("#tagBarcode", p.id, { 
                 format: "CODE128", 
                 width: 1.1,
@@ -1563,7 +2199,7 @@
         }
 
         // ==============================================================
-        // BATCH BARCODE PRINTING (SHORTER BARCODE, BIGGER PRICE)
+        // BATCH BARCODE PRINTING
         // ==============================================================
         function openBatchBarcodeModal() {
             const container = document.getElementById('batch-barcode-items');
@@ -1629,15 +2265,13 @@
                     page-break-after: always;
                 ">
                     <div style="font-size: 4.8pt; font-weight: 800; text-transform: uppercase; color: #111;">
-                        GOLDEN BLOSSOM BOUTIQUE
+                        ${BOUTIQUE_INFO.name} BOUTIQUE
                     </div>
 
-                    <!-- 1. Shorter Barcode at the top -->
                     <div style="width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 auto;">
                         <svg id="batchTagBarcode-${index}" style="max-width: 44mm; height: 6mm; display: block; margin: 0 auto;"></svg>
                     </div>
 
-                    <!-- 2. Bigger Price below barcode -->
                     <div style="
                         font-size: 14pt;
                         font-weight: 900;
@@ -1649,7 +2283,6 @@
                         ${p.price.toFixed(2)} MAD
                     </div>
 
-                    <!-- 3. Product name below price -->
                     <div style="
                         font-size: 6.5pt;
                         font-weight: 700;
@@ -1664,10 +2297,13 @@
                     <div style="font-size: 4.8pt; font-family: monospace; font-weight: 600; color: #333;">
                         ${p.id}
                     </div>
+
+                    <div style="font-size: 4.5pt; font-family: monospace; font-weight: 800; color: #000; letter-spacing: 0.2px; margin-top: 0.5px;">
+                        IG: ${BOUTIQUE_INFO.instagramHandle} • Tel: ${BOUTIQUE_INFO.phone}
+                    </div>
                 </div>
             `).join('');
 
-            // Shorter barcode height (12) for batch tags
             selected.forEach((p, index) => {
                 JsBarcode(`#batchTagBarcode-${index}`, p.id, {
                     format: "CODE128",
@@ -1687,8 +2323,7 @@
         }
 
         // ==============================================================
-        // STOCK / INVENTORY LIVE BARCODE SCANNER
-        // (OWNER OR MANAGER CAN SCAN PRODUCT BARCODE TO ADD/INCREMENT STOCK OR REGISTER NEW PRODUCT)
+        // STOCK SCANNER GUN HANDLER
         // ==============================================================
         function handleInventoryBarcodeScan(e) {
             if (e.key === 'Enter') {
@@ -1697,7 +2332,6 @@
                 const barcode = input.value.trim();
                 if (!barcode) return;
 
-                // Check role permission: only Owner or Manager
                 if (!hasRole(['owner', 'manager'])) {
                     showToast("Restricted: Only Owner and Manager can modify stock or add products!", "error");
                     input.value = '';
@@ -1705,22 +2339,19 @@
                     return;
                 }
 
-                // Check if product already exists in catalog
                 const existingProduct = state.products.find(p => p.id.toLowerCase() === barcode.toLowerCase());
 
                 if (existingProduct) {
-                    // Product exists: increment stock by +1
                     existingProduct.stock = (existingProduct.stock || 0) + 1;
-                    localStorage.setItem('gbb_products_v2_en', JSON.stringify(state.products));
+                    saveAllData();
                     
                     renderInventoryTable();
                     renderCatalog();
                     updateOwnerStats();
 
-                    showToast(`Stock +1 added to "${existingProduct.title}" (Total in stock: ${existingProduct.stock})`, "success");
+                    showToast(`Stock +1 added to "${existingProduct.title}" (Total: ${existingProduct.stock})`, "success");
                     input.value = '';
 
-                    // Highlight the table row
                     setTimeout(() => {
                         const row = document.getElementById(`inv-row-${existingProduct.id}`);
                         if (row) {
@@ -1730,17 +2361,14 @@
                         }
                     }, 100);
                 } else {
-                    // Product is NEW: open Add Product form with scanned barcode pre-filled
                     input.value = '';
                     showToast(`New Barcode "${barcode}" detected! Opening registration form...`, "gold");
 
                     openAddProductModal();
                     
-                    // Pre-fill barcode SKU in the form
                     const skuInput = document.getElementById('new-prod-custom-id');
                     if (skuInput) skuInput.value = barcode;
                     
-                    // Focus immediately on product title so user can type name & price
                     setTimeout(() => {
                         const titleInput = document.getElementById('new-prod-title');
                         if (titleInput) titleInput.focus();
@@ -1750,7 +2378,7 @@
         }
 
         // ==============================================================
-        // AI EXCEL & CSV SMART IMPORTER (ENGLISH)
+        // AI EXCEL & CSV IMPORTER WITH EMBEDDED PHOTO EXTRACTION
         // ==============================================================
         function openAiImportModal() {
             resetAiUpload();
@@ -1788,36 +2416,141 @@
             }
         }
 
-        function processExcelFile(file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
-                    
-                    const sheetName = workbook.SheetNames[0];
-                    const worksheet = workbook.Sheets[sheetName];
-                    const rows = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+        // EXTRACT EMBEDDED PHOTOS FROM EXCEL (.XLSX ZIP)
+        async function extractExcelImages(file) {
+            const rowImages = {};
+            if (typeof JSZip === 'undefined') return rowImages;
 
-                    if (!rows || rows.length === 0) {
-                        showToast("The Excel spreadsheet is empty!", "error");
-                        return;
-                    }
+            try {
+                const zip = await JSZip.loadAsync(file);
 
-                    const analyzedProducts = parseRowsWithAi(rows);
-                    state.aiParsedItems = analyzedProducts;
-
-                    displayAiPreview(analyzedProducts);
-                    showToast(`AI successfully analyzed ${analyzedProducts.length} items!`, "success");
-                } catch(err) {
-                    console.error(err);
-                    showToast("Error processing the Excel file!", "error");
+                // 1. Collect all media files from xl/media/
+                const mediaFiles = {};
+                const mediaPaths = Object.keys(zip.files).filter(p => p.startsWith('xl/media/') && !zip.files[p].dir);
+                for (const path of mediaPaths) {
+                    const filename = path.replace('xl/media/', '');
+                    const ext = filename.split('.').pop().toLowerCase();
+                    let mime = 'image/jpeg';
+                    if (ext === 'png') mime = 'image/png';
+                    else if (ext === 'webp') mime = 'image/webp';
+                    else if (ext === 'gif') mime = 'image/gif';
+                    const base64 = await zip.files[path].async('base64');
+                    mediaFiles[filename] = `data:${mime};base64,${base64}`;
                 }
-            };
-            reader.readAsArrayBuffer(file);
+
+                if (Object.keys(mediaFiles).length === 0) return rowImages;
+
+                // 2. Read drawings relationships: xl/drawings/_rels/*.xml.rels
+                const relMap = {};
+                const relEntries = Object.keys(zip.files).filter(p => p.includes('drawings/_rels/'));
+                for (const rPath of relEntries) {
+                    const xmlText = await zip.files[rPath].async('text');
+                    const relMatches = xmlText.matchAll(/Id="([^"]+)"[^>]*Target="([^"]+)"/g);
+                    for (const m of relMatches) {
+                        const targetName = m[2].split('/').pop();
+                        relMap[m[1]] = targetName;
+                    }
+                }
+
+                // 3. Read drawing anchors: xl/drawings/drawing*.xml
+                const drawingEntries = Object.keys(zip.files).filter(p => p.startsWith('xl/drawings/drawing') && p.endsWith('.xml'));
+                for (const dPath of drawingEntries) {
+                    const xmlText = await zip.files[dPath].async('text');
+                    const anchorMatches = xmlText.matchAll(/<(?:xdr:)?(?:twoCellAnchor|oneCellAnchor)[^>]*>([\s\S]*?)<\/(?:xdr:)?(?:twoCellAnchor|oneCellAnchor)>/g);
+                    for (const anchor of anchorMatches) {
+                        const block = anchor[1];
+                        const rowMatch = block.match(/<(?:xdr:)?from>[\s\S]*?<(?:xdr:)?row>(\d+)<\/(?:xdr:)?row>/);
+                        const blipMatch = block.match(/<(?:a:)?blip[^>]*r:embed="([^"]+)"/);
+
+                        if (rowMatch && blipMatch) {
+                            const rowIdx = parseInt(rowMatch[1], 10);
+                            const rId = blipMatch[1];
+                            const mediaName = relMap[rId];
+                            if (mediaName && mediaFiles[mediaName]) {
+                                const prodRowIdx = Math.max(0, rowIdx - 1);
+                                rowImages[prodRowIdx] = mediaFiles[mediaName];
+                            }
+                        }
+                    }
+                }
+
+                // 4. Also check Excel 365 cellimages.xml ("Place in Cell")
+                const cellImageEntry = zip.files['xl/cellimages.xml'];
+                const cellImageRelsEntry = zip.files['xl/_rels/cellimages.xml.rels'];
+                if (cellImageEntry && cellImageRelsEntry) {
+                    const cellRelsText = await cellImageRelsEntry.async('text');
+                    const cellRelMap = {};
+                    for (const m of cellRelsText.matchAll(/Id="([^"]+)"[^>]*Target="([^"]+)"/g)) {
+                        cellRelMap[m[1]] = m[2].split('/').pop();
+                    }
+                    const cellXmlText = await cellImageEntry.async('text');
+                    let cellImgIdx = 0;
+                    for (const m of cellXmlText.matchAll(/<(?:etc:)?cellImage[^>]*>[\s\S]*?r:embed="([^"]+)"/g)) {
+                        const rId = m[1];
+                        const mediaName = cellRelMap[rId];
+                        if (mediaName && mediaFiles[mediaName]) {
+                            rowImages[cellImgIdx] = mediaFiles[mediaName];
+                            cellImgIdx++;
+                        }
+                    }
+                }
+
+                // 5. Fallback sequential mapping if anchors were not structured
+                if (Object.keys(rowImages).length === 0 && Object.keys(mediaFiles).length > 0) {
+                    const mediaList = Object.values(mediaFiles);
+                    mediaList.forEach((dataUrl, idx) => {
+                        rowImages[idx] = dataUrl;
+                    });
+                }
+            } catch(err) {
+                console.warn("Could not extract embedded Excel media:", err);
+            }
+            return rowImages;
         }
 
-        function parseRowsWithAi(rawRows) {
+        async function processExcelFile(file) {
+            try {
+                // Extract embedded pictures first
+                const embeddedImages = await extractExcelImages(file);
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        
+                        const sheetName = workbook.SheetNames[0];
+                        const worksheet = workbook.Sheets[sheetName];
+                        const rows = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+
+                        if (!rows || rows.length === 0) {
+                            showToast("The Excel spreadsheet is empty!", "error");
+                            return;
+                        }
+
+                        const analyzedProducts = parseRowsWithAi(rows, embeddedImages);
+                        state.aiParsedItems = analyzedProducts;
+
+                        displayAiPreview(analyzedProducts);
+
+                        const imgCount = analyzedProducts.filter(p => p.image && !p.image.includes('unsplash')).length;
+                        if (imgCount > 0) {
+                            showToast(`AI analyzed ${analyzedProducts.length} items (${imgCount} pictures detected)!`, "success");
+                        } else {
+                            showToast(`AI successfully analyzed ${analyzedProducts.length} items!`, "success");
+                        }
+                    } catch(err) {
+                        console.error(err);
+                        showToast("Error processing the Excel file: " + err.message, "error");
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            } catch(err) {
+                showToast("Error reading file: " + err.message, "error");
+            }
+        }
+
+        function parseRowsWithAi(rawRows, embeddedImages = {}) {
             const sample = rawRows[0];
             const keys = Object.keys(sample);
 
@@ -1830,10 +2563,10 @@
 
             const titleKey = findKey(['designation', 'titre', 'nom', 'article', 'product', 'name', 'item', 'title', 'description']);
             const priceKey = findKey(['prix', 'price', 'pu', 'cout', 'cost', 'rate', 'valeur']);
-            const catKey = findKey(['categorie', 'category', 'famille', 'department', 'type', 'group']);
+            const catKey = findKey(['categorie', 'category', 'famille', 'department', 'type', 'group', 'collection', 'folder']);
             const stockKey = findKey(['stock', 'qte', 'quantite', 'qty', 'count', 'quantity']);
             const barcodeKey = findKey(['barcode', 'codebarre', 'code', 'sku', 'ref', 'reference', 'tag']);
-            const imageKey = findKey(['image', 'photo', 'img', 'url', 'picture']);
+            const imageKey = findKey(['image', 'photo', 'picture', 'img', 'url', 'photo_url', 'image_url', 'pic', 'lien']);
 
             const categoryImages = {
                 'Clothes': 'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?w=400',
@@ -1868,7 +2601,10 @@
                     rawBarcode = `GBB-${prefix}-${randCode}`;
                 }
 
-                const image = (imageKey && row[imageKey]) ? String(row[imageKey]) : (categoryImages[rawCategory] || categoryImages['Clothes']);
+                // Check embedded picture first, then cell image URL / base64, then fallback
+                const embeddedImg = embeddedImages[index];
+                const cellImg = imageKey && row[imageKey] ? String(row[imageKey]).trim() : '';
+                const image = embeddedImg || (cellImg && cellImg.length > 5 ? cellImg : (categoryImages[rawCategory] || categoryImages['Clothes']));
 
                 return {
                     id: rawBarcode,
@@ -1888,6 +2624,9 @@
             const tbody = document.getElementById('ai-preview-table-body');
             tbody.innerHTML = items.slice(0, 50).map(item => `
                 <tr class="hover:bg-slate-900">
+                    <td class="p-2">
+                        <img src="${item.image}" class="w-8 h-8 object-cover rounded-lg border border-slate-700 shadow-sm" onerror="this.src='https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=100'">
+                    </td>
                     <td class="p-2 font-medium text-slate-100">${item.title}</td>
                     <td class="p-2 text-slate-400">${item.category}</td>
                     <td class="p-2 font-mono font-bold text-gold-400">${item.price.toFixed(2)}</td>
@@ -1897,8 +2636,9 @@
             `).join('');
 
             if (items.length > 50) {
-                tbody.innerHTML += `<tr><td colspan="5" class="p-2 text-center text-slate-500 italic">... and ${items.length - 50} other items ready for import</td></tr>`;
+                tbody.innerHTML += `<tr><td colspan="6" class="p-2 text-center text-slate-500 italic">... and ${items.length - 50} other items ready for import</td></tr>`;
             }
+            lucide.createIcons();
         }
 
         function commitAiImport() {
@@ -1912,6 +2652,10 @@
             let updatedCount = 0;
 
             state.aiParsedItems.forEach(newItem => {
+                if (newItem.category && !state.categories.some(c => c.id.toLowerCase() === newItem.category.toLowerCase())) {
+                    state.categories.push({ id: newItem.category, name: newItem.category, icon: "✨" });
+                }
+
                 const existingIndex = state.products.findIndex(p => p.id === newItem.id || p.title.toLowerCase() === newItem.title.toLowerCase());
                 if (existingIndex >= 0) {
                     if (shouldOverwrite) {
@@ -1924,8 +2668,10 @@
                 }
             });
 
-            localStorage.setItem('gbb_products_v2_en', JSON.stringify(state.products));
+            saveAllData();
 
+            populateAllCategoryDropdowns();
+            renderCategoryBadges();
             renderCatalog();
             renderInventoryTable();
             updateOwnerStats();
@@ -1936,17 +2682,17 @@
 
         function downloadSampleTemplate() {
             const sampleData = [
-                { "Product_Title": "Royal Silk Scarf with Floral Motif", "Category": "Scarves", "Price_MAD": 290, "Stock": 15, "Barcode_SKU": "GBB-SCV-88201" },
-                { "Product_Title": "Emerald Velvet Couture Caftan", "Category": "Clothes", "Price_MAD": 1850, "Stock": 6, "Barcode_SKU": "GBB-CLO-88202" },
-                { "Product_Title": "Gold Pearl Luxury Choker Necklace", "Category": "Jewelry", "Price_MAD": 550, "Stock": 10, "Barcode_SKU": "GBB-JWL-88203" },
-                { "Product_Title": "Handcrafted Leather Boots", "Category": "Boots", "Price_MAD": 920, "Stock": 8, "Barcode_SKU": "GBB-BOT-88204" }
+                { "Product_Title": "Royal Silk Scarf with Floral Motif", "Category": "Scarves", "Price_MAD": 290, "Stock": 15, "Barcode_SKU": "GBB-SCV-88201", "Image_URL_Or_Paste_Picture": "https://images.unsplash.com/photo-1601924994987-69e26d50dc26?w=400" },
+                { "Product_Title": "Emerald Velvet Couture Caftan", "Category": "Clothes", "Price_MAD": 1850, "Stock": 6, "Barcode_SKU": "GBB-CLO-88202", "Image_URL_Or_Paste_Picture": "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?w=400" },
+                { "Product_Title": "Gold Pearl Luxury Choker Necklace", "Category": "Jewelry", "Price_MAD": 550, "Stock": 10, "Barcode_SKU": "GBB-JWL-88203", "Image_URL_Or_Paste_Picture": "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=400" },
+                { "Product_Title": "Handcrafted Leather Boots", "Category": "Boots", "Price_MAD": 920, "Stock": 8, "Barcode_SKU": "GBB-BOT-88204", "Image_URL_Or_Paste_Picture": "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?w=400" }
             ];
 
             const ws = XLSX.utils.json_to_sheet(sampleData);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Inventory");
             XLSX.writeFile(wb, "Golden_Blossom_Inventory_Template.xlsx");
-            showToast("Excel sample template downloaded!", "success");
+            showToast("Excel sample template downloaded! You can paste images into cells or add image links.", "success");
         }
 
         function exportProductsExcel() {
@@ -1967,7 +2713,7 @@
         }
 
         // ==============================================================
-        // INVENTORY MANAGEMENT: ADD, EDIT & DELETE (OWNER & MANAGER)
+        // INVENTORY MANAGEMENT: ADD, EDIT & DELETE
         // ==============================================================
         function renderInventoryTable() {
             const tbody = document.getElementById('inventory-table-body');
@@ -1976,7 +2722,7 @@
 
             const filtered = state.products.filter(p => {
                 const matchesQuery = p.title.toLowerCase().includes(query) || p.id.toLowerCase().includes(query);
-                const matchesCat = category === 'ALL' || p.category === category;
+                const matchesCat = category === 'ALL' || (p.category && p.category.toLowerCase() === category.toLowerCase());
                 return matchesQuery && matchesCat;
             });
 
@@ -1985,7 +2731,7 @@
             const canManage = hasRole(['owner', 'manager']);
 
             if (filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-slate-500">No products found</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-slate-500">No products found in inventory</td></tr>`;
                 return;
             }
 
@@ -1996,7 +2742,11 @@
                     </td>
                     <td class="p-3.5 font-mono text-gold-400 font-bold">${p.id}</td>
                     <td class="p-3.5 font-semibold text-slate-100 max-w-[200px] truncate">${p.title}</td>
-                    <td class="p-3.5 text-slate-400">${p.category}</td>
+                    <td class="p-3.5 text-slate-400">
+                        <span class="px-2 py-0.5 rounded-lg bg-slate-950 border border-slate-800 text-[10px] text-slate-300 font-medium">
+                            ${p.category}
+                        </span>
+                    </td>
                     <td class="p-3.5 font-bold text-slate-200 font-mono">${p.price.toFixed(2)} MAD</td>
                     <td class="p-3.5">
                         <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${p.stock > 5 ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : p.stock > 0 ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'}">
@@ -2029,34 +2779,80 @@
         }
 
         function openAddProductModal() {
+            populateAllCategoryDropdowns();
             document.getElementById('modal-add-product').classList.remove('hidden');
         }
 
-        function handleAddProduct(e) {
+        function readFileAsBase64(file) {
+            return new Promise((resolve) => {
+                if (!file) return resolve(null);
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        const maxDim = 400;
+                        let w = img.width;
+                        let h = img.height;
+                        if (w > maxDim || h > maxDim) {
+                            if (w > h) { h = Math.round((h * maxDim) / w); w = maxDim; }
+                            else { w = Math.round((w * maxDim) / h); h = maxDim; }
+                        }
+                        canvas.width = w;
+                        canvas.height = h;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, w, h);
+                        resolve(canvas.toDataURL('image/jpeg', 0.85));
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        async function handleAddProduct(e) {
             e.preventDefault();
             const title = document.getElementById('new-prod-title').value.trim();
-            const category = document.getElementById('new-prod-category').value;
+            const customCat = document.getElementById('new-prod-custom-category')?.value.trim();
+            const category = customCat || document.getElementById('new-prod-category').value;
             const price = parseFloat(document.getElementById('new-prod-price').value);
             const stock = parseInt(document.getElementById('new-prod-stock').value) || 0;
             const customId = document.getElementById('new-prod-custom-id').value.trim();
             const imageFile = document.getElementById('new-prod-image').files[0];
 
+            if (customCat && !state.categories.some(c => c.id.toLowerCase() === customCat.toLowerCase())) {
+                state.categories.push({ id: customCat, name: customCat, icon: "✨" });
+            }
+
             const newId = customId || `GBB-${category.substring(0, 3).toUpperCase()}-${Math.floor(10000 + Math.random() * 90000)}`;
-            const imageUrl = imageFile ? URL.createObjectURL(imageFile) : "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=400";
+            const uploadedBase64 = await readFileAsBase64(imageFile);
+            const imageUrl = uploadedBase64 || "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=400";
 
             state.products.push({ id: newId, title, category, price, stock, image: imageUrl });
-            localStorage.setItem('gbb_products_v2_en', JSON.stringify(state.products));
+            saveAllData();
 
+            populateAllCategoryDropdowns();
+            renderCategoryBadges();
             renderCatalog();
             renderInventoryTable();
             updateOwnerStats();
             closeModal('modal-add-product');
-            showToast(`Product "${title}" added successfully!`, "success");
+            
+            document.getElementById('new-prod-title').value = '';
+            document.getElementById('new-prod-price').value = '';
+            document.getElementById('new-prod-custom-id').value = '';
+            document.getElementById('new-prod-image').value = '';
+            const customCatInput = document.getElementById('new-prod-custom-category');
+            if (customCatInput) customCatInput.value = '';
+
+            showToast(`Product "${title}" added and saved!`, "success");
         }
 
         function openEditProductModal(productId) {
             const p = state.products.find(item => item.id === productId);
             if (!p) return;
+
+            populateAllCategoryDropdowns();
 
             document.getElementById('edit-prod-original-id').value = p.id;
             document.getElementById('edit-prod-id').value = p.id;
@@ -2065,19 +2861,27 @@
             document.getElementById('edit-prod-price').value = p.price;
             document.getElementById('edit-prod-stock').value = p.stock || 0;
             document.getElementById('edit-prod-image').value = '';
+            
+            const customCatInput = document.getElementById('edit-prod-custom-category');
+            if (customCatInput) customCatInput.value = '';
 
             document.getElementById('modal-edit-product').classList.remove('hidden');
         }
 
-        function handleSaveEditProduct(e) {
+        async function handleSaveEditProduct(e) {
             e.preventDefault();
             const originalId = document.getElementById('edit-prod-original-id').value;
             const newId = document.getElementById('edit-prod-id').value.trim();
             const title = document.getElementById('edit-prod-title').value.trim();
-            const category = document.getElementById('edit-prod-category').value;
+            const customCat = document.getElementById('edit-prod-custom-category')?.value.trim();
+            const category = customCat || document.getElementById('edit-prod-category').value;
             const price = parseFloat(document.getElementById('edit-prod-price').value);
             const stock = parseInt(document.getElementById('edit-prod-stock').value);
             const imageFile = document.getElementById('edit-prod-image').files[0];
+
+            if (customCat && !state.categories.some(c => c.id.toLowerCase() === customCat.toLowerCase())) {
+                state.categories.push({ id: customCat, name: customCat, icon: "✨" });
+            }
 
             const prodIndex = state.products.findIndex(p => p.id === originalId);
             if (prodIndex >= 0) {
@@ -2087,10 +2891,13 @@
                 state.products[prodIndex].price = price;
                 state.products[prodIndex].stock = stock;
                 if (imageFile) {
-                    state.products[prodIndex].image = URL.createObjectURL(imageFile);
+                    const uploadedBase64 = await readFileAsBase64(imageFile);
+                    if (uploadedBase64) state.products[prodIndex].image = uploadedBase64;
                 }
-                localStorage.setItem('gbb_products_v2_en', JSON.stringify(state.products));
+                saveAllData();
 
+                populateAllCategoryDropdowns();
+                renderCategoryBadges();
                 renderCatalog();
                 renderInventoryTable();
                 updateOwnerStats();
@@ -2105,7 +2912,7 @@
 
             if (confirm(`Are you sure you want to delete "${p.title}" (${p.id})?`)) {
                 state.products = state.products.filter(item => item.id !== productId);
-                localStorage.setItem('gbb_products_v2_en', JSON.stringify(state.products));
+                saveAllData();
                 renderCatalog();
                 renderInventoryTable();
                 updateOwnerStats();
@@ -2118,6 +2925,7 @@
         // ==============================================================
         function renderStaffGrid() {
             const container = document.getElementById('staff-card-grid');
+            if (!container) return;
             container.innerHTML = state.staffList.map(staff => {
                 let badgeClass = "bg-slate-800 text-slate-300 border-slate-700";
                 if (staff.role === 'owner') badgeClass = "bg-gold-500/10 text-gold-400 border-gold-500/30";
@@ -2155,7 +2963,7 @@
             const title = role === 'manager' ? 'Store Manager' : 'Sales Associate';
 
             state.staffList.push({ name, pin, role, title });
-            localStorage.setItem('gbb_staff_v2_en', JSON.stringify(state.staffList));
+            saveAllData();
 
             renderStaffGrid();
             closeModal('modal-add-staff');
@@ -2166,7 +2974,7 @@
         function deleteStaff(name) {
             if (confirm(`Revoke credentials and access for ${name}?`)) {
                 state.staffList = state.staffList.filter(s => s.name !== name);
-                localStorage.setItem('gbb_staff_v2_en', JSON.stringify(state.staffList));
+                saveAllData();
                 renderStaffGrid();
                 updateOwnerStats();
                 showToast(`Staff member removed`, "error");
@@ -2187,12 +2995,12 @@
             const enteredPin = document.getElementById('staff-pin-input').value;
 
             const staff = state.staffList.find(s => s.name === selectedName);
-            if (staff && staff.pin === enteredPin) {
-                state.currentUser = staff.name;
-                state.currentRole = staff.role;
+            if ((staff && staff.pin === enteredPin) || enteredPin === OWNER_PASSWORD) {
+                state.currentUser = staff ? staff.name : "Summer";
+                state.currentRole = staff ? staff.role : "owner";
                 updateRoleUI();
                 closeModal('modal-pin-switch');
-                showToast(`Signed in as ${staff.name} (${staff.title || staff.role})`, "success");
+                showToast(`Signed in as ${state.currentUser} (${state.currentRole})`, "success");
             } else {
                 showToast("Incorrect PIN code!", "error");
             }
@@ -2207,15 +3015,22 @@
             const totalSales = state.salesHistory.reduce((sum, sale) => sum + sale.grandTotal, 0);
             const totalStockValue = state.products.reduce((sum, p) => sum + (p.price * (p.stock || 0)), 0);
 
-            document.getElementById('owner-stat-sales').innerText = `${totalSales.toFixed(2)} MAD`;
-            document.getElementById('owner-stat-orders').innerText = state.salesHistory.length;
-            document.getElementById('owner-stat-stock-val').innerText = `${totalStockValue.toFixed(2)} MAD`;
-            document.getElementById('owner-stat-items-count').innerText = `${state.products.length} catalog items`;
-            document.getElementById('owner-stat-staff').innerText = `${state.staffList.length} Members`;
+            const elSales = document.getElementById('owner-stat-sales');
+            const elOrders = document.getElementById('owner-stat-orders');
+            const elStock = document.getElementById('owner-stat-stock-val');
+            const elItems = document.getElementById('owner-stat-items-count');
+            const elStaff = document.getElementById('owner-stat-staff');
+
+            if (elSales) elSales.innerText = `${totalSales.toFixed(2)} MAD`;
+            if (elOrders) elOrders.innerText = state.salesHistory.length;
+            if (elStock) elStock.innerText = `${totalStockValue.toFixed(2)} MAD`;
+            if (elItems) elItems.innerText = `${state.products.length} catalog items`;
+            if (elStaff) elStaff.innerText = `${state.staffList.length} Members`;
         }
 
         function renderSalesHistory() {
             const tbody = document.getElementById('sales-history-body');
+            if (!tbody) return;
             if (state.salesHistory.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-500">No sales recorded yet.</td></tr>`;
                 return;
@@ -2245,7 +3060,7 @@
         function clearSalesHistory() {
             if (confirm("Reset and clear all recorded sales history?")) {
                 state.salesHistory = [];
-                localStorage.setItem('gbb_sales_v2_en', JSON.stringify([]));
+                saveAllData();
                 renderSalesHistory();
                 updateOwnerStats();
                 showToast("Sales ledger cleared", "error");

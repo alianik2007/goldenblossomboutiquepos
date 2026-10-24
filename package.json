@@ -1,6 +1,11 @@
 {
   "name": "golden-blossom-pos",
-  "main": "index.html",
+  "version": "2.0.0",
+  "description": "Golden Blossom Boutique POS & Inventory AI Suite",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
   "window": {
     "title": "Golden Blossom Boutique POS",
     "width": 1280,
