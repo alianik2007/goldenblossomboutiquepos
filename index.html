@@ -51,6 +51,8 @@
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <!-- JSZip for Extracting Embedded Photos from Excel (.xlsx) Files -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <!-- Supabase authentication and shared database client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <!-- PORTABLE DATA FILE: Loads boutique data on any PC without resetting! -->
     <script src="data.js"></script>
@@ -166,6 +168,12 @@
                     <button id="folder-sync-btn" onclick="handleFolderSyncClick()" title="Data is saved in data.js inside your folder so it travels across PCs without resetting!" class="hidden sm:flex items-center gap-1.5 bg-slate-950 hover:bg-slate-800 px-2.5 py-1.5 rounded-xl border border-slate-800 text-[11px] transition-all">
                         <span id="folder-sync-dot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                         <span id="folder-sync-text" class="text-slate-300 font-medium">Folder Sync: Ready</span>
+                    </button>
+
+                    <button onclick="openSharedDatabaseModal()" title="Cloud Sync: Share products & sales across all devices" class="flex items-center gap-1.5 bg-slate-950 hover:bg-slate-800 px-2.5 py-1.5 rounded-xl border border-slate-800 text-[11px] text-emerald-300 transition-all">
+                        <span id="cloud-sync-header-dot" class="w-2 h-2 rounded-full bg-slate-600"></span>
+                        <i data-lucide="cloud" class="w-3.5 h-3.5"></i>
+                        <span id="cloud-sync-header-text" class="hidden sm:inline">Cloud Sync</span>
                     </button>
 
                     <!-- Active Staff Selector & Role Badge -->
@@ -514,16 +522,26 @@
                                 <span>Portable Folder Storage &amp; Anti-Reset Engine</span>
                                 <span id="storage-status-badge" class="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-500/30 font-mono">Portable Active</span>
                             </h3>
-                            <p class="text-xs text-slate-400 mt-0.5">Your products, categories/folders, and sales are stored in <b>data.js</b> inside this project folder. When you open this folder on another PC or system, your data travels with it and <b>never resets</b>!</p>
+                            <p class="text-xs text-slate-400 mt-0.5">Local storage is kept on this device. Connect the online database below to share products and sales across PCs.</p>
                         </div>
                     </div>
                 </div>
 
+                <div class="border-t border-slate-800 pt-4 space-y-3">
+                    <div class="flex items-center justify-between gap-3">
+                        <div>
+                            <h4 class="text-xs font-bold text-slate-200">Online Shared Data</h4>
+                            <p class="text-[11px] text-slate-400 mt-0.5">Connect from the header to load products and sales from every PC.</p>
+                        </div>
+                        <span id="shared-db-status" class="text-[10px] text-amber-300 font-mono">Not connected</span>
+                    </div>
+                </div>
+
                 <div class="grid grid-cols-1 sm:grid-cols-4 gap-2 pt-2 border-t border-slate-800">
-                    <!-- Connect Folder Button (File System Access) -->
+                    <!-- Connect a shared cloud-synced folder -->
                     <button onclick="connectFolder()" class="bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 text-xs font-semibold p-3 rounded-xl flex items-center justify-center gap-2 transition-all">
                         <i data-lucide="folder-check" class="w-4 h-4"></i>
-                        <span>Connect Folder (Auto-Save)</span>
+                        <span>Connect Shared Folder</span>
                     </button>
 
                     <!-- Save / Download data.js -->
@@ -652,7 +670,7 @@
                             <span>AI Excel Inventory Importer</span>
                             <span class="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-500/30 font-mono">Photos Auto-Extracted</span>
                         </h3>
-                        <p class="text-xs text-slate-400">Import products from Excel (.xlsx, .xls, .csv). <b>Embedded pictures and image links are read and saved automatically!</b></p>
+                        <p class="text-xs text-slate-400">Import products from Excel (.xlsx, .xls, .csv). <b>Embedded photos are matched by row in .xlsx files; image links are also supported.</b></p>
                     </div>
                 </div>
                 <button onclick="closeModal('modal-ai-excel')" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800">
@@ -883,6 +901,114 @@
         </div>
     </div>
 
+    <!-- Modal: Multi-Device Cloud Sync Manager -->
+    <div id="modal-shared-database" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-lg w-full space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <!-- Modal Header -->
+            <div class="flex items-start justify-between gap-3 border-b border-slate-800 pb-3">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-600 via-teal-500 to-emerald-400 flex items-center justify-center text-white shadow-lg shadow-emerald-500/20">
+                        <i data-lucide="cloud-lightning" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-slate-100 flex items-center gap-2">
+                            <span>Multi-Device Cloud Sync</span>
+                            <span id="cloud-sync-badge" class="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full border border-slate-700 font-mono">Offline</span>
+                        </h3>
+                        <p class="text-xs text-slate-400">Keep inventory, stock, and sales automatically in sync across all PCs, iPads &amp; phones.</p>
+                    </div>
+                </div>
+                <button onclick="closeModal('modal-shared-database')" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800" aria-label="Close">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Current Status Box -->
+            <div class="bg-slate-950 p-3 rounded-2xl border border-slate-800 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <span id="shared-db-status-dot" class="w-2.5 h-2.5 rounded-full bg-slate-600"></span>
+                    <span id="shared-db-modal-status" class="text-xs font-mono text-slate-300">Not connected</span>
+                </div>
+                <button type="button" onclick="testCloudConnection()" class="text-[11px] bg-slate-800 hover:bg-slate-700 text-gold-400 px-2.5 py-1 rounded-lg border border-slate-700 transition-colors flex items-center gap-1">
+                    <i data-lucide="refresh-cw" class="w-3 h-3"></i> Sync Now
+                </button>
+            </div>
+
+            <!-- Supabase Cloud Credentials Section (Works on file://, localhost, or Vercel!) -->
+            <div class="space-y-3 bg-slate-950/60 p-3.5 rounded-2xl border border-slate-800">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                        <i data-lucide="database" class="w-3.5 h-3.5 text-emerald-400"></i>
+                        <span>Supabase Database Credentials</span>
+                    </span>
+                    <span class="text-[10px] text-slate-500">100% Free Cloud DB</span>
+                </div>
+                
+                <div class="space-y-2">
+                    <div>
+                        <label class="text-[10px] text-slate-400 block font-medium">Supabase Project URL:</label>
+                        <input id="shared-db-custom-url" type="url" placeholder="https://your-project.supabase.co" class="mt-0.5 w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 font-mono focus:outline-none focus:border-gold-500/50">
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-slate-400 block font-medium">Supabase Anon Public Key:</label>
+                        <input id="shared-db-custom-key" type="password" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." class="mt-0.5 w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 font-mono focus:outline-none focus:border-gold-500/50">
+                    </div>
+                </div>
+
+                <!-- Direct Sync Toggle -->
+                <div class="flex items-center justify-between pt-1">
+                    <label class="flex items-center gap-2 cursor-pointer text-xs text-slate-300">
+                        <input type="checkbox" id="shared-db-direct-sync-toggle" class="rounded accent-gold-500 w-4 h-4 cursor-pointer" checked>
+                        <span>Direct Store Sync (No cashier login password needed)</span>
+                    </label>
+                </div>
+
+                <div class="flex gap-2 pt-1">
+                    <button type="button" onclick="saveCustomCloudConfig()" class="flex-1 bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-bold text-xs py-2 px-3 rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5">
+                        <i data-lucide="check-circle" class="w-3.5 h-3.5"></i>
+                        <span>Save &amp; Connect Cloud</span>
+                    </button>
+                    <button type="button" onclick="clearCloudConfig()" class="bg-slate-800 hover:bg-slate-700 text-rose-400 text-xs px-3 py-2 rounded-xl border border-slate-700 transition-colors">
+                        Clear
+                    </button>
+                </div>
+            </div>
+
+            <!-- Optional Staff Account Sign In (For Role Permissions Mode) -->
+            <details class="bg-slate-950/40 p-3 rounded-2xl border border-slate-800 text-xs text-slate-400">
+                <summary class="font-semibold text-slate-300 cursor-pointer hover:text-gold-400 flex items-center justify-between">
+                    <span>Staff Account Login (Optional)</span>
+                    <i data-lucide="chevron-down" class="w-3.5 h-3.5"></i>
+                </summary>
+                <form onsubmit="connectSharedDatabase(event)" class="space-y-2 mt-3 pt-2 border-t border-slate-800">
+                    <label class="text-[10px] text-slate-400 block">Account Email:
+                        <input id="shared-db-email" type="email" autocomplete="username" class="mt-1 w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-gold-500/50">
+                    </label>
+                    <label class="text-[10px] text-slate-400 block">Password:
+                        <input id="shared-db-password" type="password" autocomplete="current-password" class="mt-1 w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-gold-500/50">
+                    </label>
+                    <div class="flex gap-2 pt-1">
+                        <button type="submit" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold py-1.5 rounded-lg border border-slate-700">Sign In Account</button>
+                        <button type="button" onclick="disconnectSharedDatabase()" class="bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-xs py-1.5 px-3 rounded-lg border border-rose-500/20">Sign Out</button>
+                    </div>
+                </form>
+            </details>
+
+            <!-- Quick Instructions: How to connect other devices -->
+            <div class="bg-gold-500/5 border border-gold-500/20 rounded-2xl p-3 text-[11px] text-slate-300 space-y-1">
+                <p class="font-bold text-gold-400 flex items-center gap-1">
+                    <i data-lucide="smartphone" class="w-3.5 h-3.5"></i>
+                    <span>How to connect other devices (PC, iPad, Phone):</span>
+                </p>
+                <ol class="list-decimal pl-4 space-y-0.5 text-slate-400">
+                    <li>Open this POS on your second device.</li>
+                    <li>Click <b>Cloud Sync</b> at the top and paste the exact same <b>Supabase URL &amp; Anon Key</b>.</li>
+                    <li>Click <b>Save &amp; Connect Cloud</b>. That's it! Any product or sale added on one device will automatically appear on all devices in real-time.</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal 5: Staff PIN Login / Switch User -->
     <div id="modal-pin-switch" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-sm w-full space-y-4 text-center shadow-2xl">
@@ -1001,6 +1127,17 @@
         // DETECT NODE / ELECTRON / NW.JS
         let nodeFs = null;
         let nodeBasePath = '';
+        let electronIpc = null;
+        let sharedFolderPath = '';
+        let sharedFolderData = null;
+        let sharedFolderError = '';
+        let sharedDbClient = null;
+        let sharedDbSession = null;
+        let sharedDbSaveTimer = null;
+        let sharedDbPollTimer = null;
+        let sharedDbWritePending = false;
+        let sharedDbRealtimeChannel = null;
+        let sharedDbDirectSync = false;
         (function detectNode() {
             try {
                 if (typeof nw !== 'undefined') {
@@ -1017,6 +1154,14 @@
                     let p = window.location.pathname.replace(/^\/([A-Z]:)/, '$1');
                     if (process.platform === 'win32' && p.startsWith('/')) p = p.substring(1);
                     nodeBasePath = path.dirname(p) + path.sep;
+                    const electron = require('electron');
+                    electronIpc = electron.ipcRenderer || null;
+                    if (electronIpc) {
+                        const shared = electronIpc.sendSync('shared-folder:load');
+                        sharedFolderPath = shared.path || '';
+                        sharedFolderData = shared.data;
+                        sharedFolderError = shared.error || '';
+                    }
                 }
             } catch(e) {}
         })();
@@ -1026,6 +1171,16 @@
 
         // DATA LOADER WITH ZERO-RESET LOGIC
         function loadInitialData() {
+            if (sharedFolderData && Array.isArray(sharedFolderData.products)) {
+                return {
+                    categories: sharedFolderData.categories && sharedFolderData.categories.length > 0 ? sharedFolderData.categories : DEFAULT_CATEGORIES,
+                    products: sharedFolderData.products,
+                    staffList: sharedFolderData.staffList && sharedFolderData.staffList.length > 0 ? sharedFolderData.staffList : DEFAULT_STAFF,
+                    salesHistory: sharedFolderData.salesHistory || [],
+                    updatedAt: sharedFolderData.updatedAt || new Date().toISOString()
+                };
+            }
+
             const fileData = (typeof window !== 'undefined' && window.GBB_DATA) ? window.GBB_DATA : null;
 
             let localMaster = null;
@@ -1127,6 +1282,42 @@
                 console.warn("localStorage save error:", e);
             }
 
+            if (sharedFolderPath && electronIpc && !sharedFolderError) {
+                electronIpc.invoke('shared-folder:save', exportPayload).then(result => {
+                    if (result.ok) {
+                        sharedFolderError = '';
+                        updateSyncIndicator('saved-shared');
+                    } else {
+                        console.warn('Shared folder save error:', result.error);
+                        sharedFolderError = result.error;
+                        updateSyncIndicator('shared-error');
+                    }
+                }).catch(error => {
+                    console.warn('Shared folder save error:', error);
+                    sharedFolderError = error.message;
+                    updateSyncIndicator('shared-error');
+                });
+            }
+
+            if (sharedDbClient && (sharedDbSession || sharedDbDirectSync)) {
+                const sharedPayload = JSON.parse(JSON.stringify(exportPayload));
+                clearTimeout(sharedDbSaveTimer);
+                sharedDbWritePending = true;
+                updateSharedDatabaseStatus('Saving to cloud...', true);
+                sharedDbSaveTimer = setTimeout(async () => {
+                    const { error } = await sharedDbClient
+                        .from('gbb_shared_data')
+                        .upsert({ id: 1, payload: sharedPayload, updated_at: sharedPayload.updatedAt });
+                    sharedDbWritePending = false;
+                    if (error) {
+                        console.error('Shared database save error:', error);
+                        updateSharedDatabaseStatus('Cloud save failed: ' + error.message, false);
+                    } else {
+                        updateSharedDatabaseStatus('Cloud Synced ⚡', true);
+                    }
+                }, 300);
+            }
+
             // 2. If running under Node.js / Electron / NW.js: save to data.js & data.json directly
             if (nodeFs && nodeBasePath) {
                 try {
@@ -1176,6 +1367,14 @@
                 dot.className = "w-2 h-2 rounded-full bg-emerald-400";
                 text.innerText = "Folder File: Saved";
                 if (badge) badge.innerText = "Live File Active (Electron/Node)";
+            } else if (mode === 'saved-shared') {
+                dot.className = "w-2 h-2 rounded-full bg-emerald-400 animate-pulse";
+                text.innerText = "Shared Folder: Saved";
+                if (badge) badge.innerText = "Shared Folder Connected";
+            } else if (mode === 'shared-error') {
+                dot.className = "w-2 h-2 rounded-full bg-rose-400";
+                text.innerText = "Shared Folder: Error";
+                if (badge) badge.innerText = "Shared Folder Save Failed";
             } else if (mode === 'saved-fsa') {
                 dot.className = "w-2 h-2 rounded-full bg-emerald-400 animate-pulse";
                 text.innerText = "Folder Synced: Auto";
@@ -1187,7 +1386,400 @@
             }
         }
 
+        function updateSharedDatabaseStatus(message, isConnected = null) {
+            const status = document.getElementById('shared-db-status');
+            const modalStatus = document.getElementById('shared-db-modal-status');
+            const modalDot = document.getElementById('shared-db-status-dot');
+            const modalBadge = document.getElementById('cloud-sync-badge');
+            const headerDot = document.getElementById('cloud-sync-header-dot');
+            const headerText = document.getElementById('cloud-sync-header-text');
+
+            if (status) status.innerText = message;
+            if (modalStatus) modalStatus.innerText = message;
+
+            const connected = isConnected !== null ? isConnected : (Boolean(sharedDbClient) && (Boolean(sharedDbSession) || sharedDbDirectSync));
+
+            if (modalDot) {
+                modalDot.className = connected ? "w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" : "w-2.5 h-2.5 rounded-full bg-slate-600";
+            }
+            if (modalBadge) {
+                modalBadge.className = connected ? "text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-500/30 font-mono" : "text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full border border-slate-700 font-mono";
+                modalBadge.innerText = connected ? "Live Connected" : "Offline";
+            }
+            if (headerDot) {
+                headerDot.className = connected ? "w-2 h-2 rounded-full bg-emerald-400 animate-pulse" : "w-2 h-2 rounded-full bg-slate-600";
+            }
+            if (headerText) {
+                headerText.innerText = connected ? "Cloud Synced" : "Cloud Sync";
+            }
+        }
+
+        function openSharedDatabaseModal() {
+            document.getElementById('modal-shared-database').classList.remove('hidden');
+            
+            const savedUrl = localStorage.getItem('gbb_supabase_url') || '';
+            const savedKey = localStorage.getItem('gbb_supabase_key') || '';
+            const directSync = localStorage.getItem('gbb_supabase_direct_sync') !== 'false';
+
+            const urlInput = document.getElementById('shared-db-custom-url');
+            const keyInput = document.getElementById('shared-db-custom-key');
+            const toggle = document.getElementById('shared-db-direct-sync-toggle');
+
+            if (urlInput && !urlInput.value) urlInput.value = savedUrl;
+            if (keyInput && !keyInput.value) keyInput.value = savedKey;
+            if (toggle) toggle.checked = directSync;
+
+            if (sharedDbSession && sharedDbSession.user && sharedDbSession.user.email) {
+                const emailInput = document.getElementById('shared-db-email');
+                if (emailInput) emailInput.value = sharedDbSession.user.email;
+            }
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function applySharedDatabaseUser(session) {
+            const metadata = (session && session.user && session.user.app_metadata) || {};
+            const role = ['owner', 'manager', 'cashier'].includes(metadata.role) ? metadata.role : 'cashier';
+            state.currentUser = (session && session.user && session.user.email) || 'Staff';
+            state.currentRole = role;
+            updateRoleUI();
+        }
+
+        async function initializeSharedDatabase() {
+            let config = null;
+
+            // 1. Check custom credentials saved in localStorage (works locally via file://, on other devices, or localhost)
+            const localUrl = localStorage.getItem('gbb_supabase_url');
+            const localKey = localStorage.getItem('gbb_supabase_key');
+            if (localUrl && localKey) {
+                config = { configured: true, url: localUrl.trim(), anonKey: localKey.trim() };
+            }
+
+            // 2. If not in localStorage and running via HTTP/HTTPS, fetch from /api/config (Vercel deployment)
+            if (!config && window.location.protocol !== 'file:') {
+                try {
+                    const response = await fetch('/api/config', { cache: 'no-store' });
+                    if (response.ok) {
+                        const json = await response.json();
+                        if (json && json.configured) config = json;
+                    }
+                } catch(e) {
+                    console.log('No /api/config endpoint detected.');
+                }
+            }
+
+            if (!config || !config.configured) {
+                updateSharedDatabaseStatus('Offline (Click Cloud Sync to connect)', false);
+                return;
+            }
+
+            if (!window.supabase || !window.supabase.createClient) {
+                updateSharedDatabaseStatus('Supabase library not loaded', false);
+                return;
+            }
+
+            try {
+                sharedDbClient = window.supabase.createClient(config.url, config.anonKey);
+                
+                // Set default direct sync mode if not explicitly turned off
+                sharedDbDirectSync = localStorage.getItem('gbb_supabase_direct_sync') !== 'false';
+
+                const { data, error } = await sharedDbClient.auth.getSession();
+                if (!error && data && data.session) {
+                    sharedDbSession = data.session;
+                    applySharedDatabaseUser(sharedDbSession);
+                }
+
+                if (sharedDbSession || sharedDbDirectSync) {
+                    await loadSharedDatabaseData(false);
+                    startSharedDatabaseRefresh();
+                    updateSharedDatabaseStatus('Live Cloud Synced ⚡', true);
+                } else {
+                    updateSharedDatabaseStatus('Configured (Sign in or enable Direct Sync)', false);
+                }
+
+                sharedDbClient.auth.onAuthStateChange((_event, session) => {
+                    sharedDbSession = session;
+                    if (session) {
+                        applySharedDatabaseUser(session);
+                        loadSharedDatabaseData(false);
+                        startSharedDatabaseRefresh();
+                        updateSharedDatabaseStatus('Live Cloud Synced ⚡', true);
+                    } else if (!sharedDbDirectSync) {
+                        clearInterval(sharedDbPollTimer);
+                        if (sharedDbRealtimeChannel) {
+                            try { sharedDbClient.removeChannel(sharedDbRealtimeChannel); } catch(e){}
+                        }
+                        updateSharedDatabaseStatus('Signed out', false);
+                    }
+                });
+            } catch(error) {
+                console.error('Shared database initialization error:', error);
+                updateSharedDatabaseStatus('Connection error: ' + error.message, false);
+            }
+        }
+
+        async function saveCustomCloudConfig() {
+            const urlInput = document.getElementById('shared-db-custom-url');
+            const keyInput = document.getElementById('shared-db-custom-key');
+            const toggle = document.getElementById('shared-db-direct-sync-toggle');
+
+            const url = urlInput ? urlInput.value.trim() : '';
+            const key = keyInput ? keyInput.value.trim() : '';
+            const isDirect = toggle ? toggle.checked : true;
+
+            if (!url || !key) {
+                showToast('Please enter both Supabase Project URL and Anon Public Key.', 'error');
+                return;
+            }
+
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                showToast('Supabase URL must start with https://', 'error');
+                return;
+            }
+
+            localStorage.setItem('gbb_supabase_url', url);
+            localStorage.setItem('gbb_supabase_key', key);
+            localStorage.setItem('gbb_supabase_direct_sync', isDirect ? 'true' : 'false');
+            sharedDbDirectSync = isDirect;
+
+            updateSharedDatabaseStatus('Connecting to Supabase...', null);
+
+            try {
+                if (!window.supabase || !window.supabase.createClient) {
+                    throw new Error('Supabase client library not ready.');
+                }
+                sharedDbClient = window.supabase.createClient(url, key);
+                
+                await loadSharedDatabaseData(true);
+                startSharedDatabaseRefresh();
+                updateSharedDatabaseStatus('Live Cloud Synced ⚡', true);
+                showToast('Successfully connected! Products and sales are now synced across all devices.', 'success');
+                setTimeout(() => closeModal('modal-shared-database'), 1200);
+            } catch(err) {
+                console.error('Custom cloud connect error:', err);
+                updateSharedDatabaseStatus('Connection failed: ' + err.message, false);
+                showToast('Connection failed: ' + err.message, 'error');
+            }
+        }
+
+        function clearCloudConfig() {
+            localStorage.removeItem('gbb_supabase_url');
+            localStorage.removeItem('gbb_supabase_key');
+            localStorage.removeItem('gbb_supabase_direct_sync');
+            
+            if (sharedDbClient && sharedDbRealtimeChannel) {
+                try { sharedDbClient.removeChannel(sharedDbRealtimeChannel); } catch(e){}
+            }
+            clearInterval(sharedDbPollTimer);
+            sharedDbClient = null;
+            sharedDbSession = null;
+            sharedDbDirectSync = false;
+
+            const urlInput = document.getElementById('shared-db-custom-url');
+            const keyInput = document.getElementById('shared-db-custom-key');
+            if (urlInput) urlInput.value = '';
+            if (keyInput) keyInput.value = '';
+
+            updateSharedDatabaseStatus('Offline (Disconnected)', false);
+            showToast('Cloud credentials cleared from this device.', 'gold');
+        }
+
+        async function testCloudConnection() {
+            if (!sharedDbClient) {
+                showToast('Please enter and save Supabase credentials first.', 'error');
+                return;
+            }
+            updateSharedDatabaseStatus('Checking connection...', true);
+            try {
+                await loadSharedDatabaseData(false);
+                showToast('Connection active! Cloud inventory up to date.', 'success');
+                updateSharedDatabaseStatus('Live Cloud Synced ⚡', true);
+            } catch(err) {
+                showToast('Sync check failed: ' + err.message, 'error');
+                updateSharedDatabaseStatus('Sync check failed', false);
+            }
+        }
+
+        async function loadSharedDatabaseData(initializeIfMissing) {
+            if (!sharedDbClient) return;
+
+            const { data, error } = await sharedDbClient
+                .from('gbb_shared_data')
+                .select('payload')
+                .eq('id', 1)
+                .maybeSingle();
+
+            if (error) throw error;
+
+            if (data && data.payload && Array.isArray(data.payload.products)) {
+                applySharedFolderData(data.payload);
+                updateSharedDatabaseStatus('Live Cloud Synced ⚡', true);
+                return;
+            }
+
+            if (!initializeIfMissing) {
+                updateSharedDatabaseStatus('No cloud data yet (initialize with Save)', true);
+                return;
+            }
+
+            // Initialize database with local data if table is currently empty
+            const payload = {
+                version: '2.0.0',
+                updatedAt: state.updatedAt || new Date().toISOString(),
+                categories: state.categories,
+                products: state.products,
+                staffList: state.staffList,
+                salesHistory: state.salesHistory
+            };
+            
+            const { error: insertError } = await sharedDbClient
+                .from('gbb_shared_data')
+                .insert({ id: 1, payload, updated_at: payload.updatedAt });
+            if (insertError && insertError.code !== '23505') throw insertError;
+
+            updateSharedDatabaseStatus('Cloud Initialized & Synced ⚡', true);
+        }
+
+        function startSharedDatabaseRefresh() {
+            clearInterval(sharedDbPollTimer);
+
+            // 1. Real-time WebSocket listener (instant updates in milliseconds across devices)
+            try {
+                if (sharedDbRealtimeChannel && sharedDbClient) {
+                    try { sharedDbClient.removeChannel(sharedDbRealtimeChannel); } catch(e){}
+                }
+                if (sharedDbClient) {
+                    sharedDbRealtimeChannel = sharedDbClient
+                        .channel('public:gbb_shared_data')
+                        .on('postgres_changes', { event: '*', schema: 'public', table: 'gbb_shared_data' }, (payload) => {
+                            if (payload.new && payload.new.payload && payload.new.payload.updatedAt > state.updatedAt) {
+                                applySharedFolderData(payload.new.payload);
+                                updateSharedDatabaseStatus('Live Synced (Just now) ⚡', true);
+                                showToast('⚡ Real-time update received from another device!', 'success');
+                            }
+                        })
+                        .subscribe();
+                }
+            } catch(e) {
+                console.warn('Realtime channel subscription error:', e);
+            }
+
+            // 2. Periodic polling fallback (every 4 seconds) to guarantee consistency
+            sharedDbPollTimer = setInterval(async () => {
+                if ((!sharedDbSession && !sharedDbDirectSync) || sharedDbWritePending || !sharedDbClient) return;
+                try {
+                    const { data, error } = await sharedDbClient
+                        .from('gbb_shared_data')
+                        .select('payload')
+                        .eq('id', 1)
+                        .maybeSingle();
+                    if (error) throw error;
+                    if (data && data.payload && Array.isArray(data.payload.products) && data.payload.updatedAt > state.updatedAt) {
+                        applySharedFolderData(data.payload);
+                        updateSharedDatabaseStatus('Live Cloud Synced ⚡', true);
+                    }
+                } catch(error) {
+                    console.error('Shared database refresh error:', error);
+                }
+            }, 4000);
+        }
+
+        async function connectSharedDatabase(event) {
+            event.preventDefault();
+            if (!sharedDbClient) {
+                showToast('Please configure Supabase Project URL and Key first.', 'error');
+                return;
+            }
+
+            const email = document.getElementById('shared-db-email').value.trim();
+            const password = document.getElementById('shared-db-password').value;
+            updateSharedDatabaseStatus('Signing in...', null);
+            const { data, error } = await sharedDbClient.auth.signInWithPassword({ email, password });
+            if (error) {
+                updateSharedDatabaseStatus('Sign-in failed', false);
+                showToast('Shared database sign-in failed: ' + error.message, 'error');
+                return;
+            }
+
+            sharedDbSession = data.session;
+            applySharedDatabaseUser(data.session);
+            try {
+                await loadSharedDatabaseData(true);
+                startSharedDatabaseRefresh();
+                closeModal('modal-shared-database');
+                showToast('Shared products and sales loaded.', 'success');
+            } catch(loadError) {
+                console.error('Shared database load error:', loadError);
+                updateSharedDatabaseStatus('Access denied or database setup incomplete', false);
+                showToast('Could not load shared data: ' + loadError.message, 'error');
+            }
+        }
+
+        async function disconnectSharedDatabase() {
+            if (!sharedDbClient) return;
+            const { error } = await sharedDbClient.auth.signOut();
+            if (error) {
+                showToast('Could not sign out: ' + error.message, 'error');
+                return;
+            }
+            sharedDbSession = null;
+            if (!sharedDbDirectSync) {
+                clearInterval(sharedDbPollTimer);
+                clearTimeout(sharedDbSaveTimer);
+                if (sharedDbRealtimeChannel) {
+                    try { sharedDbClient.removeChannel(sharedDbRealtimeChannel); } catch(e){}
+                }
+            }
+            updateSharedDatabaseStatus('Signed out', false);
+            showToast('Signed out of staff account.', 'info');
+        }
+
+        function applySharedFolderData(data) {
+            state.categories = data.categories && data.categories.length > 0 ? data.categories : DEFAULT_CATEGORIES;
+            state.products = data.products;
+            state.staffList = data.staffList && data.staffList.length > 0 ? data.staffList : DEFAULT_STAFF;
+            state.salesHistory = data.salesHistory || [];
+            state.updatedAt = data.updatedAt || new Date().toISOString();
+
+            populateAllCategoryDropdowns();
+            renderCategoryBadges();
+            renderCatalog();
+            renderInventoryTable();
+            renderStaffGrid();
+            renderSalesHistory();
+            updateOwnerStats();
+        }
+
         async function connectFolder() {
+            if (electronIpc) {
+                try {
+                    const result = await electronIpc.invoke('shared-folder:select');
+                    if (result.canceled) return;
+                    if (result.error) {
+                        showToast('Could not read shared data.json: ' + result.error, 'error');
+                        return;
+                    }
+                    if (result.data && !Array.isArray(result.data.products)) {
+                        showToast('The selected folder data.json is invalid. It was not loaded.', 'error');
+                        return;
+                    }
+
+                    sharedFolderPath = result.path;
+                    sharedFolderError = '';
+                    if (result.data) {
+                        sharedFolderData = result.data;
+                        applySharedFolderData(result.data);
+                    } else {
+                        saveAllData();
+                    }
+                    updateSyncIndicator('saved-shared');
+                    showToast('Shared folder connected. Select this same synced folder on each PC.', 'success');
+                } catch(err) {
+                    showToast('Could not connect shared folder: ' + err.message, 'error');
+                }
+                return;
+            }
+
             if (!window.showDirectoryPicker) {
                 showToast("Your browser does not support folder access. Use 'Save data.js' to export the file!", "gold");
                 downloadDataJs();
@@ -1501,8 +2093,27 @@
             renderSalesHistory();
             updateOwnerStats();
             updateRoleUI();
-            updateSyncIndicator(nodeFs ? 'saved-node' : 'browser-only');
+            updateSyncIndicator(sharedFolderError ? 'shared-error' : sharedFolderPath ? 'saved-shared' : nodeFs ? 'saved-node' : 'browser-only');
+            initializeSharedDatabase();
             focusScannerInput();
+
+            if (electronIpc && sharedFolderPath) {
+                setInterval(async () => {
+                    try {
+                        const latest = await electronIpc.invoke('shared-folder:load-latest');
+                        if (latest.error) {
+                            sharedFolderError = latest.error;
+                            updateSyncIndicator('shared-error');
+                        } else if (latest.data && Array.isArray(latest.data.products) && latest.data.updatedAt > state.updatedAt) {
+                            sharedFolderData = latest.data;
+                            applySharedFolderData(latest.data);
+                            showToast('Shared folder updates loaded.', 'success');
+                        }
+                    } catch(error) {
+                        console.warn('Shared folder refresh error:', error);
+                    }
+                }, 5000);
+            }
 
             // Keyboard shortcut listeners
             document.addEventListener('keydown', (e) => {
@@ -1597,7 +2208,7 @@
 
         // TAB SWITCHING
         function switchTab(tab) {
-            if (tab === 'owner' && state.currentRole !== 'owner') {
+            if (tab === 'owner' && !['owner', 'manager'].includes(state.currentRole)) {
                 document.getElementById('modal-owner-auth').classList.remove('hidden');
                 document.getElementById('owner-pass-input').focus();
                 return;
@@ -2041,8 +2652,8 @@
                         <div style="font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px;">
                             Scan for Boutique Instagram
                         </div>
-                        <div id="receipt-qrcode" style="display: inline-block; margin: 4px auto;"></div>
-                        <div style="font-size: 11.5px; font-weight: 800; color: #000; margin-top: 2px;">
+                        <div id="receipt-qrcode" class="mx-auto my-4 w-36 h-36 bg-white rounded-md shadow-md"></div>
+                        <div style="font-size: 14px; font-weight: 800; color: #000; margin-top: 2px;">
                             ${BOUTIQUE_INFO.instagramHandle}
                         </div>
                         <div style="margin-top: 6px; display: flex; justify-content: center;">
@@ -2083,8 +2694,8 @@
             try {
                 new QRCode(document.getElementById("receipt-qrcode"), {
                     text: BOUTIQUE_INFO.instagram,
-                    width: 76,
-                    height: 76,
+                    width: 144,
+                    height: 144,
                     correctLevel: QRCode.CorrectLevel.M
                 });
             } catch(e) {
@@ -2121,8 +2732,8 @@
             area.innerHTML = `
                 <div style="
                     width: 50mm;
-                    min-height: 24mm;
-                    max-height: 28mm;
+                    min-height: 32mm;
+                    max-height: 36mm;
                     margin: 0 auto;
                     padding: 1mm 1.5mm;
                     box-sizing: border-box;
@@ -2143,7 +2754,7 @@
 
                     <!-- 1. SHORTER BARCODE AT THE TOP (CENTERED) -->
                     <div style="width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 auto;">
-                        <svg id="tagBarcode" style="max-width: 44mm; height: 6mm; display: block; margin: 0 auto;"></svg>
+                        <svg id="tagBarcode" style="max-width: 44mm; height: 12mm; display: block; margin: 0 auto;"></svg>
                     </div>
 
                     <!-- 2. BIGGER PROMINENT PRICE -->
@@ -2175,27 +2786,43 @@
                         ${p.id} • ${p.category}
                     </div>
 
-                    <!-- INSTAGRAM & PHONE ON THE BARCODE TAG -->
-                    <div style="font-size: 4.5pt; font-family: monospace; font-weight: 800; color: #000; letter-spacing: 0.2px; margin-top: 0.5px;">
-                        IG: ${BOUTIQUE_INFO.instagramHandle} • Tel: ${BOUTIQUE_INFO.phone}
+                    <!-- INSTAGRAM QR & CONTACT ON THE BARCODE TAG -->
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 1mm; padding-top: 1mm; border-top: 0.5px solid #e2e8f0; width: 100%;">
+                        <div id="tagInstagramQr" style="width: 14mm; height: 14mm; display: inline-block;"></div>
+                        <div style="text-align: left; line-height: 1.25;">
+                            <div style="font-size: 5pt; font-weight: 800; color: #000; text-transform: uppercase;">Scan for Instagram</div>
+                            <div style="font-size: 4.8pt; font-weight: 700; color: #111;">${BOUTIQUE_INFO.instagramHandle}</div>
+                            <div style="font-size: 4.5pt; font-family: monospace; font-weight: 600; color: #333;">Tel: ${BOUTIQUE_INFO.phone}</div>
+                        </div>
                     </div>
                 </div>
             `;
 
             JsBarcode("#tagBarcode", p.id, { 
                 format: "CODE128", 
-                width: 1.1,
-                height: 12, 
+                width: 1.2,
+                height: 26, 
                 displayValue: true,
-                fontSize: 6.5,
-                textMargin: 0.5,
-                margin: 0 
+                fontSize: 9,
+                textMargin: 1.5,
+                margin: 3 
             });
+
+            try {
+                new QRCode(document.getElementById("tagInstagramQr"), {
+                    text: BOUTIQUE_INFO.instagram,
+                    width: 52,
+                    height: 52,
+                    correctLevel: QRCode.CorrectLevel.M
+                });
+            } catch(e) {
+                console.warn("Tag QR error", e);
+            }
 
             setTimeout(() => {
                 window.print();
                 focusScannerInput();
-            }, 120);
+            }, 250);
         }
 
         // ==============================================================
@@ -2249,8 +2876,8 @@
             area.innerHTML = selected.map((p, index) => `
                 <div style="
                     width: 50mm;
-                    min-height: 24mm;
-                    max-height: 28mm;
+                    min-height: 32mm;
+                    max-height: 36mm;
                     margin: 0 auto;
                     padding: 1mm 1.5mm;
                     box-sizing: border-box;
@@ -2269,7 +2896,7 @@
                     </div>
 
                     <div style="width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 auto;">
-                        <svg id="batchTagBarcode-${index}" style="max-width: 44mm; height: 6mm; display: block; margin: 0 auto;"></svg>
+                        <svg id="batchTagBarcode-${index}" style="max-width: 44mm; height: 12mm; display: block; margin: 0 auto;"></svg>
                     </div>
 
                     <div style="
@@ -2298,8 +2925,14 @@
                         ${p.id}
                     </div>
 
-                    <div style="font-size: 4.5pt; font-family: monospace; font-weight: 800; color: #000; letter-spacing: 0.2px; margin-top: 0.5px;">
-                        IG: ${BOUTIQUE_INFO.instagramHandle} • Tel: ${BOUTIQUE_INFO.phone}
+                    <!-- INSTAGRAM QR & CONTACT ON THE BARCODE TAG -->
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 1mm; padding-top: 1mm; border-top: 0.5px solid #e2e8f0; width: 100%;">
+                        <div id="batchTagInstagramQr-${index}" style="width: 14mm; height: 14mm; display: inline-block;"></div>
+                        <div style="text-align: left; line-height: 1.25;">
+                            <div style="font-size: 5pt; font-weight: 800; color: #000; text-transform: uppercase;">Scan for Instagram</div>
+                            <div style="font-size: 4.8pt; font-weight: 700; color: #111;">${BOUTIQUE_INFO.instagramHandle}</div>
+                            <div style="font-size: 4.5pt; font-family: monospace; font-weight: 600; color: #333;">Tel: ${BOUTIQUE_INFO.phone}</div>
+                        </div>
                     </div>
                 </div>
             `).join('');
@@ -2307,19 +2940,30 @@
             selected.forEach((p, index) => {
                 JsBarcode(`#batchTagBarcode-${index}`, p.id, {
                     format: "CODE128",
-                    width: 1.1,
-                    height: 12,
+                    width: 1.2,
+                    height: 26,
                     displayValue: true,
-                    fontSize: 6.5,
-                    textMargin: 0.5,
-                    margin: 0
+                    fontSize: 9,
+                    textMargin: 1.5,
+                    margin: 3
                 });
+
+                try {
+                    new QRCode(document.getElementById(`batchTagInstagramQr-${index}`), {
+                        text: BOUTIQUE_INFO.instagram,
+                        width: 52,
+                        height: 52,
+                        correctLevel: QRCode.CorrectLevel.M
+                    });
+                } catch(e) {
+                    console.warn("Batch Tag QR error", e);
+                }
             });
 
             setTimeout(() => {
                 window.print();
                 focusScannerInput();
-            }, 250);
+            }, 350);
         }
 
         // ==============================================================
@@ -2416,105 +3060,112 @@
             }
         }
 
-        // EXTRACT EMBEDDED PHOTOS FROM EXCEL (.XLSX ZIP)
-        async function extractExcelImages(file) {
+        // EXTRACT EMBEDDED PHOTOS FROM XLSX DRAWINGS
+        async function extractExcelImages(file, worksheetName) {
             const rowImages = {};
-            if (typeof JSZip === 'undefined') return rowImages;
+            if (/\.xls$/i.test(file.name || '') && !/\.xlsx$/i.test(file.name || '')) {
+                return { images: rowImages, warning: 'Embedded photos require an .xlsx file. Convert this .xls workbook to .xlsx and import it again.' };
+            }
+            if (!/\.xlsx$/i.test(file.name || '')) return { images: rowImages, warning: '' };
+            if (typeof JSZip === 'undefined' || typeof DOMParser === 'undefined') {
+                return { images: rowImages, warning: 'The Excel image reader is unavailable. Check the internet connection and try again.' };
+            }
+
+            const relationshipNamespace = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+            const getXml = async (zip, zipPath) => {
+                const entry = zip.files[zipPath];
+                if (!entry) throw new Error(`Missing workbook file: ${zipPath}`);
+                const document = new DOMParser().parseFromString(await entry.async('text'), 'application/xml');
+                if (document.getElementsByTagName('parsererror').length > 0) throw new Error(`Invalid XML: ${zipPath}`);
+                return document;
+            };
+            const getRelationshipId = element => element.getAttributeNS(relationshipNamespace, 'id') || element.getAttribute('r:id');
+            const getRelationships = async (zip, relPath) => {
+                const document = await getXml(zip, relPath);
+                return Array.from(document.getElementsByTagNameNS('*', 'Relationship')).map(item => ({
+                    id: item.getAttribute('Id'),
+                    target: item.getAttribute('Target')
+                }));
+            };
+            const resolveZipPath = (sourcePath, target) => {
+                const parts = target.startsWith('/') ? [] : sourcePath.split('/').slice(0, -1);
+                target.replace(/^\//, '').split('/').forEach(part => {
+                    if (!part || part === '.') return;
+                    if (part === '..') parts.pop();
+                    else parts.push(part);
+                });
+                return parts.join('/');
+            };
+            const getRelationshipsPath = sourcePath => {
+                const separator = sourcePath.lastIndexOf('/');
+                const directory = sourcePath.slice(0, separator);
+                const filename = sourcePath.slice(separator + 1);
+                return `${directory}/_rels/${filename}.rels`;
+            };
 
             try {
                 const zip = await JSZip.loadAsync(file);
+                const workbookPath = 'xl/workbook.xml';
+                const workbookDocument = await getXml(zip, workbookPath);
+                const workbookSheet = Array.from(workbookDocument.getElementsByTagNameNS('*', 'sheet'))
+                    .find(sheet => sheet.getAttribute('name') === worksheetName);
+                if (!workbookSheet) throw new Error('The selected worksheet could not be located in the workbook.');
 
-                // 1. Collect all media files from xl/media/
-                const mediaFiles = {};
-                const mediaPaths = Object.keys(zip.files).filter(p => p.startsWith('xl/media/') && !zip.files[p].dir);
-                for (const path of mediaPaths) {
-                    const filename = path.replace('xl/media/', '');
-                    const ext = filename.split('.').pop().toLowerCase();
-                    let mime = 'image/jpeg';
-                    if (ext === 'png') mime = 'image/png';
-                    else if (ext === 'webp') mime = 'image/webp';
-                    else if (ext === 'gif') mime = 'image/gif';
-                    const base64 = await zip.files[path].async('base64');
-                    mediaFiles[filename] = `data:${mime};base64,${base64}`;
+                const workbookRelationships = await getRelationships(zip, getRelationshipsPath(workbookPath));
+                const worksheetRelationship = workbookRelationships.find(item => item.id === getRelationshipId(workbookSheet));
+                if (!worksheetRelationship) throw new Error('The worksheet file could not be located in the workbook.');
+
+                const worksheetPath = resolveZipPath(workbookPath, worksheetRelationship.target);
+                const worksheetDocument = await getXml(zip, worksheetPath);
+                const drawingElement = worksheetDocument.getElementsByTagNameNS('*', 'drawing')[0];
+                if (!drawingElement) return { images: rowImages, warning: '' };
+
+                const worksheetRelationships = await getRelationships(zip, getRelationshipsPath(worksheetPath));
+                const drawingRelationship = worksheetRelationships.find(item => item.id === getRelationshipId(drawingElement));
+                if (!drawingRelationship) throw new Error('The worksheet drawing reference is invalid.');
+
+                const drawingPath = resolveZipPath(worksheetPath, drawingRelationship.target);
+                const drawingDocument = await getXml(zip, drawingPath);
+                const drawingRelationships = await getRelationships(zip, getRelationshipsPath(drawingPath));
+                const anchors = [
+                    ...Array.from(drawingDocument.getElementsByTagNameNS('*', 'twoCellAnchor')),
+                    ...Array.from(drawingDocument.getElementsByTagNameNS('*', 'oneCellAnchor'))
+                ];
+
+                for (const anchor of anchors) {
+                    const fromRow = anchor.getElementsByTagNameNS('*', 'from')[0]
+                        ?.getElementsByTagNameNS('*', 'row')[0]?.textContent;
+                    const blip = anchor.getElementsByTagNameNS('*', 'blip')[0];
+                    if (fromRow === undefined || !blip) continue;
+
+                    const imageRelationship = drawingRelationships.find(item => item.id === getRelationshipId(blip));
+                    if (!imageRelationship) continue;
+
+                    const imagePath = resolveZipPath(drawingPath, imageRelationship.target);
+                    const imageEntry = zip.files[imagePath];
+                    if (!imageEntry) continue;
+
+                    const extension = imagePath.split('.').pop().toLowerCase();
+                    const mimeType = extension === 'jpg' || extension === 'jpeg' ? 'image/jpeg'
+                        : extension === 'gif' ? 'image/gif'
+                        : extension === 'webp' ? 'image/webp'
+                        : extension === 'bmp' ? 'image/bmp'
+                        : 'image/png';
+                    const rowNumber = Number(fromRow) + 1;
+                    rowImages[rowNumber] = `data:${mimeType};base64,${await imageEntry.async('base64')}`;
                 }
 
-                if (Object.keys(mediaFiles).length === 0) return rowImages;
-
-                // 2. Read drawings relationships: xl/drawings/_rels/*.xml.rels
-                const relMap = {};
-                const relEntries = Object.keys(zip.files).filter(p => p.includes('drawings/_rels/'));
-                for (const rPath of relEntries) {
-                    const xmlText = await zip.files[rPath].async('text');
-                    const relMatches = xmlText.matchAll(/Id="([^"]+)"[^>]*Target="([^"]+)"/g);
-                    for (const m of relMatches) {
-                        const targetName = m[2].split('/').pop();
-                        relMap[m[1]] = targetName;
-                    }
-                }
-
-                // 3. Read drawing anchors: xl/drawings/drawing*.xml
-                const drawingEntries = Object.keys(zip.files).filter(p => p.startsWith('xl/drawings/drawing') && p.endsWith('.xml'));
-                for (const dPath of drawingEntries) {
-                    const xmlText = await zip.files[dPath].async('text');
-                    const anchorMatches = xmlText.matchAll(/<(?:xdr:)?(?:twoCellAnchor|oneCellAnchor)[^>]*>([\s\S]*?)<\/(?:xdr:)?(?:twoCellAnchor|oneCellAnchor)>/g);
-                    for (const anchor of anchorMatches) {
-                        const block = anchor[1];
-                        const rowMatch = block.match(/<(?:xdr:)?from>[\s\S]*?<(?:xdr:)?row>(\d+)<\/(?:xdr:)?row>/);
-                        const blipMatch = block.match(/<(?:a:)?blip[^>]*r:embed="([^"]+)"/);
-
-                        if (rowMatch && blipMatch) {
-                            const rowIdx = parseInt(rowMatch[1], 10);
-                            const rId = blipMatch[1];
-                            const mediaName = relMap[rId];
-                            if (mediaName && mediaFiles[mediaName]) {
-                                const prodRowIdx = Math.max(0, rowIdx - 1);
-                                rowImages[prodRowIdx] = mediaFiles[mediaName];
-                            }
-                        }
-                    }
-                }
-
-                // 4. Also check Excel 365 cellimages.xml ("Place in Cell")
-                const cellImageEntry = zip.files['xl/cellimages.xml'];
-                const cellImageRelsEntry = zip.files['xl/_rels/cellimages.xml.rels'];
-                if (cellImageEntry && cellImageRelsEntry) {
-                    const cellRelsText = await cellImageRelsEntry.async('text');
-                    const cellRelMap = {};
-                    for (const m of cellRelsText.matchAll(/Id="([^"]+)"[^>]*Target="([^"]+)"/g)) {
-                        cellRelMap[m[1]] = m[2].split('/').pop();
-                    }
-                    const cellXmlText = await cellImageEntry.async('text');
-                    let cellImgIdx = 0;
-                    for (const m of cellXmlText.matchAll(/<(?:etc:)?cellImage[^>]*>[\s\S]*?r:embed="([^"]+)"/g)) {
-                        const rId = m[1];
-                        const mediaName = cellRelMap[rId];
-                        if (mediaName && mediaFiles[mediaName]) {
-                            rowImages[cellImgIdx] = mediaFiles[mediaName];
-                            cellImgIdx++;
-                        }
-                    }
-                }
-
-                // 5. Fallback sequential mapping if anchors were not structured
-                if (Object.keys(rowImages).length === 0 && Object.keys(mediaFiles).length > 0) {
-                    const mediaList = Object.values(mediaFiles);
-                    mediaList.forEach((dataUrl, idx) => {
-                        rowImages[idx] = dataUrl;
-                    });
-                }
-            } catch(err) {
-                console.warn("Could not extract embedded Excel media:", err);
+                return { images: rowImages, warning: '' };
+            } catch(error) {
+                console.warn('Could not extract embedded Excel media:', error);
+                return { images: rowImages, warning: `Could not read embedded photos: ${error.message}` };
             }
-            return rowImages;
         }
 
         async function processExcelFile(file) {
             try {
-                // Extract embedded pictures first
-                const embeddedImages = await extractExcelImages(file);
-
                 const reader = new FileReader();
-                reader.onload = function(e) {
+                reader.onload = async function(e) {
                     try {
                         const data = new Uint8Array(e.target.result);
                         const workbook = XLSX.read(data, { type: 'array' });
@@ -2528,16 +3179,19 @@
                             return;
                         }
 
-                        const analyzedProducts = parseRowsWithAi(rows, embeddedImages);
+                        const imageResult = await extractExcelImages(file, sheetName);
+                        const analyzedProducts = parseRowsWithAi(rows, imageResult.images);
                         state.aiParsedItems = analyzedProducts;
 
                         displayAiPreview(analyzedProducts);
 
                         const imgCount = analyzedProducts.filter(p => p.image && !p.image.includes('unsplash')).length;
-                        if (imgCount > 0) {
+                        if (imageResult.warning) {
+                            showToast(imageResult.warning, "error");
+                        } else if (imgCount > 0) {
                             showToast(`AI analyzed ${analyzedProducts.length} items (${imgCount} pictures detected)!`, "success");
                         } else {
-                            showToast(`AI successfully analyzed ${analyzedProducts.length} items!`, "success");
+                            showToast("No embedded pictures found. Add image URLs in an Image/Photo column or place each picture over its product row.", "gold");
                         }
                     } catch(err) {
                         console.error(err);
@@ -2602,7 +3256,8 @@
                 }
 
                 // Check embedded picture first, then cell image URL / base64, then fallback
-                const embeddedImg = embeddedImages[index];
+                const excelRowNumber = Number.isInteger(row.__rowNum__) ? row.__rowNum__ + 1 : index + 2;
+                const embeddedImg = embeddedImages[excelRowNumber];
                 const cellImg = imageKey && row[imageKey] ? String(row[imageKey]).trim() : '';
                 const image = embeddedImg || (cellImg && cellImg.length > 5 ? cellImg : (categoryImages[rawCategory] || categoryImages['Clothes']));
 
