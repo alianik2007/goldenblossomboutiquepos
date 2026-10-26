@@ -1,6 +1,6 @@
 window.GBB_DATA = {
   "version": "2.0.0",
-  "updatedAt": "2026-10-26T16:44:30.679Z",
+  "updatedAt": "2026-10-26T16:45:58.845Z",
   "categories": [
     {
       "id": "Clothes",
@@ -28,24 +28,7 @@ window.GBB_DATA = {
       "name": "Accessories (Bags & Belts)"
     }
   ],
-  "products": [
-    {
-      "id": "GBB-JEW-70202",
-      "image": "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=400",
-      "price": 600,
-      "stock": 0,
-      "title": "necklace",
-      "category": "Jewelry"
-    },
-    {
-      "id": "GBB-JEW-72119",
-      "image": "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=400",
-      "price": 400,
-      "stock": 0,
-      "title": "earings",
-      "category": "Jewelry"
-    }
-  ],
+  "products": [],
   "staffList": [
     {
       "pin": "0000",
