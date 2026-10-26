@@ -11,5 +11,8 @@
     "width": 1280,
     "height": 800,
     "icon": "icon.png"
+  },
+  "devDependencies": {
+    "electron": "^45.0.0"
   }
 }

@@ -164,17 +164,24 @@
 
                 <!-- Folder Storage Status & Active Staff -->
                 <div class="flex items-center gap-2">
-                    <!-- GitHub / Portable Storage Status Pill -->
-                    <button id="folder-sync-btn" onclick="openGithubSyncModal()" title="Save & Sync directly to your GitHub repository (no local files needed)" class="hidden sm:flex items-center gap-1.5 bg-slate-950 hover:bg-slate-800 px-2.5 py-1.5 rounded-xl border border-slate-800 text-[11px] transition-all">
-                        <span id="folder-sync-dot" class="w-2 h-2 rounded-full bg-sky-400"></span>
-                        <i data-lucide="git-branch" class="w-3.5 h-3.5 text-sky-400"></i>
-                        <span id="folder-sync-text" class="text-slate-300 font-medium">GitHub Sync</span>
+                    <!-- GitHub Cloud Auto-Sync Pill -->
+                    <button id="github-sync-btn" onclick="openSyncCenterModal('github')" title="GitHub Auto-Sync status & settings" class="flex items-center gap-1.5 bg-slate-950 hover:bg-slate-800 px-2.5 py-1.5 rounded-xl border border-slate-800 text-[11px] text-slate-300 transition-all">
+                        <span id="github-sync-dot" class="w-2 h-2 rounded-full bg-amber-400"></span>
+                        <i data-lucide="github" class="w-3.5 h-3.5 text-slate-200"></i>
+                        <span id="github-sync-text" class="hidden sm:inline font-medium">GitHub: Connect</span>
                     </button>
 
-                    <button onclick="openSharedDatabaseModal()" title="Cloud Sync: Share products & sales across all devices" class="flex items-center gap-1.5 bg-slate-950 hover:bg-slate-800 px-2.5 py-1.5 rounded-xl border border-slate-800 text-[11px] text-emerald-300 transition-all">
-                        <span id="cloud-sync-header-dot" class="w-2 h-2 rounded-full bg-slate-600"></span>
+                    <!-- Cloud Database Pill -->
+                    <button id="cloud-sync-btn" onclick="openSyncCenterModal('supabase')" title="Supabase Cloud Database Sync" class="hidden md:flex items-center gap-1.5 bg-slate-950 hover:bg-slate-800 px-2.5 py-1.5 rounded-xl border border-slate-800 text-[11px] text-emerald-300 transition-all">
+                        <span id="cloud-sync-dot" class="w-2 h-2 rounded-full bg-slate-500"></span>
                         <i data-lucide="cloud" class="w-3.5 h-3.5"></i>
-                        <span id="cloud-sync-header-text" class="hidden sm:inline">Cloud Sync</span>
+                        <span id="cloud-sync-text" class="font-medium">Cloud DB</span>
+                    </button>
+
+                    <!-- Portable Storage Status Pill -->
+                    <button id="folder-sync-btn" onclick="handleFolderSyncClick()" title="Data is saved in data.js inside your folder so it travels across PCs without resetting!" class="hidden xl:flex items-center gap-1.5 bg-slate-950 hover:bg-slate-800 px-2.5 py-1.5 rounded-xl border border-slate-800 text-[11px] transition-all">
+                        <span id="folder-sync-dot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                        <span id="folder-sync-text" class="text-slate-300 font-medium">Folder Sync: Ready</span>
                     </button>
 
                     <!-- Active Staff Selector & Role Badge -->
@@ -329,12 +336,6 @@
                     <button onclick="openCategoryModal()" class="bg-slate-800 hover:bg-slate-700 text-gold-400 text-xs font-semibold px-3 py-2.5 rounded-xl border border-slate-700 transition-all flex items-center gap-2">
                         <i data-lucide="folder-plus" class="w-4 h-4"></i>
                         <span>Categories &amp; Folders</span>
-                    </button>
-
-                    <!-- Save Directly to GitHub Button -->
-                    <button onclick="saveInventoryToGithub(true)" title="Save changes directly into your GitHub repository" class="bg-slate-800 hover:bg-slate-700 text-sky-300 text-xs font-semibold px-3 py-2.5 rounded-xl border border-slate-700 transition-all flex items-center gap-1.5">
-                        <i data-lucide="git-branch" class="w-4 h-4 text-sky-400"></i>
-                        <span>Save to GitHub</span>
                     </button>
 
                     <!-- Save / Export Data Button -->
@@ -534,39 +535,51 @@
                     </div>
                 </div>
 
-                <div class="border-t border-slate-800 pt-4 space-y-3">
-                    <div class="flex items-center justify-between gap-3">
-                        <div>
-                            <h4 class="text-xs font-bold text-slate-200">Online Shared Data</h4>
-                            <p class="text-[11px] text-slate-400 mt-0.5">Connect from the header to load products and sales from every PC.</p>
+                <div class="border-t border-slate-800 pt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div class="bg-slate-950/60 border border-slate-800/80 rounded-xl p-3 flex items-center justify-between">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-8 h-8 rounded-lg bg-gold-500/10 border border-gold-500/20 flex items-center justify-center text-gold-400">
+                                <i data-lucide="github" class="w-4 h-4"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-xs font-bold text-slate-200">GitHub Auto-Sync</h4>
+                                <p class="text-[10px] text-slate-400" id="panel-github-status-text">Auto-save catalog &amp; sales to GitHub</p>
+                            </div>
                         </div>
-                        <span id="shared-db-status" class="text-[10px] text-amber-300 font-mono">Not connected</span>
+                        <button onclick="openSyncCenterModal('github')" class="text-xs font-semibold px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-gold-400 rounded-lg transition-all">Configure</button>
+                    </div>
+
+                    <div class="bg-slate-950/60 border border-slate-800/80 rounded-xl p-3 flex items-center justify-between">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+                                <i data-lucide="database" class="w-4 h-4"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-xs font-bold text-slate-200">Supabase Cloud DB</h4>
+                                <p class="text-[10px] text-slate-400" id="shared-db-status">Multi-PC live sync</p>
+                            </div>
+                        </div>
+                        <button onclick="openSyncCenterModal('supabase')" class="text-xs font-semibold px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-emerald-300 rounded-lg transition-all">Configure</button>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-5 gap-2 pt-2 border-t border-slate-800">
-                    <!-- Save directly to GitHub Repository -->
-                    <button onclick="openGithubSyncModal()" class="bg-sky-600/20 hover:bg-sky-600/30 text-sky-300 border border-sky-500/30 text-xs font-semibold p-3 rounded-xl flex items-center justify-center gap-2 transition-all">
-                        <i data-lucide="git-branch" class="w-4 h-4 text-sky-400"></i>
-                        <span>Save to GitHub</span>
-                    </button>
-
+                <div class="grid grid-cols-1 sm:grid-cols-4 gap-2 pt-2 border-t border-slate-800">
                     <!-- Connect a shared cloud-synced folder -->
                     <button onclick="connectFolder()" class="bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 text-xs font-semibold p-3 rounded-xl flex items-center justify-center gap-2 transition-all">
                         <i data-lucide="folder-check" class="w-4 h-4"></i>
-                        <span>Connect Folder</span>
+                        <span>Connect Shared Folder</span>
                     </button>
 
                     <!-- Save / Download data.js -->
                     <button onclick="downloadDataJs()" class="bg-gold-500/20 hover:bg-gold-500/30 text-gold-300 border border-gold-500/30 text-xs font-semibold p-3 rounded-xl flex items-center justify-center gap-2 transition-all">
                         <i data-lucide="download" class="w-4 h-4"></i>
-                        <span>Export data.js</span>
+                        <span>Save / Export data.js</span>
                     </button>
 
                     <!-- Import data.js or data.json -->
                     <button onclick="document.getElementById('import-data-file-input').click()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold p-3 rounded-xl flex items-center justify-center gap-2 transition-all">
                         <i data-lucide="upload" class="w-4 h-4"></i>
-                        <span>Import File</span>
+                        <span>Import data.js / JSON</span>
                     </button>
 
                     <!-- Reset to Defaults -->
@@ -888,231 +901,342 @@
             <div class="flex items-center justify-between border-b border-slate-800 pb-2">
                 <h3 class="text-sm font-bold text-slate-100 flex items-center gap-2">
                     <i data-lucide="printer" class="w-4 h-4 text-gold-400"></i>
-                    <span>Thermal Barcode Tags Batch Print</span>
+                    <span>Thermal Barcode Tags Print</span>
                 </h3>
                 <button onclick="closeModal('modal-batch-barcode')" class="text-slate-400 hover:text-white">
                     <i data-lucide="x" class="w-4 h-4"></i>
                 </button>
             </div>
             
-            <p class="text-xs text-slate-400">Select products to print labels formatted with barcode at top and price / title / IG below.</p>
+            <!-- Label Roll Size Selector -->
+            <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-2">
+                <div class="flex items-center justify-between">
+                    <span class="text-[11px] font-semibold text-slate-300 flex items-center gap-1.5">
+                        <i data-lucide="tag" class="w-3.5 h-3.5 text-gold-400"></i>
+                        <span>Label Dimensions:</span>
+                    </span>
+                    <span class="text-[10px] text-emerald-400 font-mono font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">Crisp Edge Optimized</span>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    <button type="button" onclick="setLabelPreset('25x15')" id="btn-label-25x15" class="py-1.5 px-2 rounded-lg text-xs font-semibold border transition-all text-center bg-gold-500/20 border-gold-500 text-gold-300 shadow">
+                        25mm × 15mm
+                        <span class="block text-[9px] text-slate-400 font-normal">Mini / Jewelry</span>
+                    </button>
+                    <button type="button" onclick="setLabelPreset('30x20')" id="btn-label-30x20" class="py-1.5 px-2 rounded-lg text-xs font-semibold border border-slate-800 hover:border-slate-700 text-slate-400 hover:text-slate-200 transition-all text-center">
+                        30mm × 20mm
+                        <span class="block text-[9px] text-slate-500 font-normal">Small Retail</span>
+                    </button>
+                    <button type="button" onclick="setLabelPreset('40x30')" id="btn-label-40x30" class="py-1.5 px-2 rounded-lg text-xs font-semibold border border-slate-800 hover:border-slate-700 text-slate-400 hover:text-slate-200 transition-all text-center">
+                        40mm × 30mm
+                        <span class="block text-[9px] text-slate-500 font-normal">Standard Tag</span>
+                    </button>
+                    <button type="button" onclick="setLabelPreset('50x30')" id="btn-label-50x30" class="py-1.5 px-2 rounded-lg text-xs font-semibold border border-slate-800 hover:border-slate-700 text-slate-400 hover:text-slate-200 transition-all text-center">
+                        50mm × 30mm
+                        <span class="block text-[9px] text-slate-500 font-normal">Hang Tag</span>
+                    </button>
+                </div>
+                <p class="text-[10px] text-slate-400">Optimized for thermal barcode printers. Barcodes are rendered with <b class="text-slate-200">vector crisp edges</b> and maximum height to scan instantly.</p>
+            </div>
 
-            <div class="max-h-60 overflow-y-auto space-y-2 border border-slate-800 p-2 rounded-xl bg-slate-950" id="batch-barcode-items">
+            <div class="flex items-center justify-between text-xs text-slate-400 pt-1">
+                <span>Select products to print tags for:</span>
+                <button onclick="selectAllBatchBarcodes(true)" class="text-[11px] text-gold-400 hover:underline">Select All</button>
+            </div>
+
+            <div class="max-h-56 overflow-y-auto space-y-1.5 border border-slate-800 p-2 rounded-xl bg-slate-950" id="batch-barcode-items">
                 <!-- Checkboxes injected dynamically -->
             </div>
 
             <div class="flex items-center justify-between pt-2">
-                <button onclick="selectAllBatchBarcodes(true)" class="text-[11px] text-gold-400 hover:underline">Select All</button>
+                <button onclick="selectAllBatchBarcodes(false)" class="text-[11px] text-slate-400 hover:underline">Deselect All</button>
                 <div class="flex gap-2">
                     <button onclick="closeModal('modal-batch-barcode')" class="px-3 py-2 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl">Cancel</button>
                     <button onclick="printSelectedBarcodes()" class="px-4 py-2 text-xs font-bold bg-gold-500 hover:bg-gold-400 text-slate-950 rounded-xl flex items-center gap-1.5 shadow-md">
                         <i data-lucide="printer" class="w-4 h-4"></i>
-                        <span>Print Selected Labels</span>
+                        <span>Print Barcode Labels</span>
                     </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Modal: Multi-Device Cloud Sync Manager -->
-    <div id="modal-shared-database" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-lg w-full space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+    <!-- ============================================================== -->
+    <!-- MODAL: SYNC & CLOUD HUB (GitHub Auto-Sync & Supabase Database)  -->
+    <!-- ============================================================== -->
+    <div id="modal-sync-center" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-xl w-full space-y-5 shadow-2xl overflow-y-auto max-h-[92vh]">
+            
             <!-- Modal Header -->
-            <div class="flex items-start justify-between gap-3 border-b border-slate-800 pb-3">
+            <div class="flex items-start justify-between border-b border-slate-800 pb-4">
                 <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-600 via-teal-500 to-emerald-400 flex items-center justify-center text-white shadow-lg shadow-emerald-500/20">
-                        <i data-lucide="cloud-lightning" class="w-5 h-5"></i>
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-gold-500/20 to-amber-500/10 border border-gold-500/30 flex items-center justify-center text-gold-400 shadow-lg">
+                        <i data-lucide="cloud-cog" class="w-5 h-5"></i>
                     </div>
                     <div>
                         <h3 class="text-base font-bold text-slate-100 flex items-center gap-2">
-                            <span>Multi-Device Cloud Sync</span>
-                            <span id="cloud-sync-badge" class="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full border border-slate-700 font-mono">Offline</span>
+                            <span>Cloud Sync &amp; GitHub Hub</span>
+                            <span id="sync-hub-badge" class="text-[10px] bg-emerald-500/10 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-500/20 font-mono">Live</span>
                         </h3>
-                        <p class="text-xs text-slate-400">Keep inventory, stock, and sales automatically in sync across all PCs, iPads &amp; phones.</p>
+                        <p class="text-xs text-slate-400 mt-0.5">Easily back up, auto-save to GitHub, and sync boutique inventory across devices.</p>
                     </div>
                 </div>
-                <button onclick="closeModal('modal-shared-database')" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800" aria-label="Close">
+                <button onclick="closeModal('modal-sync-center')" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
 
-            <!-- Current Status Box -->
-            <div class="bg-slate-950 p-3 rounded-2xl border border-slate-800 flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                    <span id="shared-db-status-dot" class="w-2.5 h-2.5 rounded-full bg-slate-600"></span>
-                    <span id="shared-db-modal-status" class="text-xs font-mono text-slate-300">Not connected</span>
-                </div>
-                <button type="button" onclick="testCloudConnection()" class="text-[11px] bg-slate-800 hover:bg-slate-700 text-gold-400 px-2.5 py-1 rounded-lg border border-slate-700 transition-colors flex items-center gap-1">
-                    <i data-lucide="refresh-cw" class="w-3 h-3"></i> Sync Now
+            <!-- Tab Switcher -->
+            <div class="flex gap-2 p-1 bg-slate-950 rounded-xl border border-slate-800/80">
+                <button type="button" id="tab-btn-github" onclick="switchSyncTab('github')" class="flex-1 py-2 text-xs font-semibold rounded-lg flex items-center justify-center gap-2 transition-all bg-slate-800 text-gold-400 shadow">
+                    <i data-lucide="github" class="w-4 h-4"></i>
+                    <span>GitHub Auto-Sync</span>
+                </button>
+                <button type="button" id="tab-btn-supabase" onclick="switchSyncTab('supabase')" class="flex-1 py-2 text-xs font-semibold rounded-lg flex items-center justify-center gap-2 transition-all text-slate-400 hover:text-slate-200">
+                    <i data-lucide="database" class="w-4 h-4"></i>
+                    <span>Supabase Cloud DB</span>
+                </button>
+                <button type="button" id="tab-btn-local" onclick="switchSyncTab('local')" class="flex-1 py-2 text-xs font-semibold rounded-lg flex items-center justify-center gap-2 transition-all text-slate-400 hover:text-slate-200">
+                    <i data-lucide="folder-sync" class="w-4 h-4"></i>
+                    <span>Local / Folder</span>
                 </button>
             </div>
 
-            <!-- Supabase Cloud Credentials Section (Works on file://, localhost, or Vercel!) -->
-            <div class="space-y-3 bg-slate-950/60 p-3.5 rounded-2xl border border-slate-800">
-                <div class="flex items-center justify-between">
-                    <span class="text-xs font-bold text-slate-200 flex items-center gap-1.5">
-                        <i data-lucide="database" class="w-3.5 h-3.5 text-emerald-400"></i>
-                        <span>Supabase Database Credentials</span>
-                    </span>
-                    <span class="text-[10px] text-slate-500">100% Free Cloud DB</span>
-                </div>
-                
-                <div class="space-y-2">
-                    <div>
-                        <label class="text-[10px] text-slate-400 block font-medium">Supabase Project URL:</label>
-                        <input id="shared-db-custom-url" type="url" placeholder="https://your-project.supabase.co" class="mt-0.5 w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 font-mono focus:outline-none focus:border-gold-500/50">
+            <!-- TAB 1: GITHUB AUTO-SYNC -->
+            <div id="sync-tab-github" class="space-y-4">
+                <!-- Status Card -->
+                <div id="github-status-card" class="bg-slate-950/80 border border-slate-800 rounded-2xl p-4 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div id="github-status-indicator" class="w-3 h-3 rounded-full bg-amber-400"></div>
+                        <div>
+                            <span class="text-xs font-bold text-slate-200 block" id="github-status-title">GitHub Not Connected</span>
+                            <span class="text-[11px] text-slate-400" id="github-status-desc">Connect a GitHub repository to enable automatic 1-click cloud backups.</span>
+                        </div>
                     </div>
-                    <div>
-                        <label class="text-[10px] text-slate-400 block font-medium">Supabase Anon Public Key:</label>
-                        <input id="shared-db-custom-key" type="password" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." class="mt-0.5 w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 font-mono focus:outline-none focus:border-gold-500/50">
-                    </div>
+                    <span id="github-last-sync-time" class="text-[10px] text-slate-500 font-mono">Never</span>
                 </div>
 
-                <!-- Direct Sync Toggle -->
-                <div class="flex items-center justify-between pt-1">
-                    <label class="flex items-center gap-2 cursor-pointer text-xs text-slate-300">
-                        <input type="checkbox" id="shared-db-direct-sync-toggle" class="rounded accent-gold-500 w-4 h-4 cursor-pointer" checked>
-                        <span>Direct Store Sync (No cashier login password needed)</span>
-                    </label>
-                </div>
-
-                <div class="flex gap-2 pt-1">
-                    <button type="button" onclick="saveCustomCloudConfig()" class="flex-1 bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-bold text-xs py-2 px-3 rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5">
-                        <i data-lucide="check-circle" class="w-3.5 h-3.5"></i>
-                        <span>Save &amp; Connect Cloud</span>
-                    </button>
-                    <button type="button" onclick="clearCloudConfig()" class="bg-slate-800 hover:bg-slate-700 text-rose-400 text-xs px-3 py-2 rounded-xl border border-slate-700 transition-colors">
-                        Clear
-                    </button>
-                </div>
-            </div>
-
-            <!-- Optional Staff Account Sign In (For Role Permissions Mode) -->
-            <details class="bg-slate-950/40 p-3 rounded-2xl border border-slate-800 text-xs text-slate-400">
-                <summary class="font-semibold text-slate-300 cursor-pointer hover:text-gold-400 flex items-center justify-between">
-                    <span>Staff Account Login (Optional)</span>
-                    <i data-lucide="chevron-down" class="w-3.5 h-3.5"></i>
-                </summary>
-                <form onsubmit="connectSharedDatabase(event)" class="space-y-2 mt-3 pt-2 border-t border-slate-800">
-                    <label class="text-[10px] text-slate-400 block">Account Email:
-                        <input id="shared-db-email" type="email" autocomplete="username" class="mt-1 w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-gold-500/50">
-                    </label>
-                    <label class="text-[10px] text-slate-400 block">Password:
-                        <input id="shared-db-password" type="password" autocomplete="current-password" class="mt-1 w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-gold-500/50">
-                    </label>
-                    <div class="flex gap-2 pt-1">
-                        <button type="submit" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold py-1.5 rounded-lg border border-slate-700">Sign In Account</button>
-                        <button type="button" onclick="disconnectSharedDatabase()" class="bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 text-xs py-1.5 px-3 rounded-lg border border-rose-500/20">Sign Out</button>
-                    </div>
-                </form>
-            </details>
-
-            <!-- Quick Instructions: How to connect other devices -->
-            <div class="bg-gold-500/5 border border-gold-500/20 rounded-2xl p-3 text-[11px] text-slate-300 space-y-1">
-                <p class="font-bold text-gold-400 flex items-center gap-1">
-                    <i data-lucide="smartphone" class="w-3.5 h-3.5"></i>
-                    <span>How to connect other devices (PC, iPad, Phone):</span>
-                </p>
-                <ol class="list-decimal pl-4 space-y-0.5 text-slate-400">
-                    <li>Open this POS on your second device.</li>
-                    <li>Click <b>Cloud Sync</b> at the top and paste the exact same <b>Supabase URL &amp; Anon Key</b>.</li>
-                    <li>Click <b>Save &amp; Connect Cloud</b>. That's it! Any product or sale added on one device will automatically appear on all devices in real-time.</li>
-                </ol>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal: GitHub Direct Repository Sync -->
-    <div id="modal-github-sync" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-lg w-full space-y-4 shadow-2xl max-h-[90vh] overflow-y-auto">
-            <!-- Modal Header -->
-            <div class="flex items-start justify-between gap-3 border-b border-slate-800 pb-3">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-sky-600 via-sky-500 to-indigo-500 flex items-center justify-center text-white shadow-lg shadow-sky-500/20">
-                        <i data-lucide="git-branch" class="w-5 h-5"></i>
-                    </div>
+                <!-- GitHub Config Form -->
+                <div class="space-y-3 bg-slate-950/40 border border-slate-800/60 rounded-2xl p-4">
+                    <!-- Repo field -->
                     <div>
-                        <h3 class="text-base font-bold text-slate-100 flex items-center gap-2">
-                            <span>GitHub Cloud Sync</span>
-                            <span id="github-sync-badge" class="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full border border-slate-700 font-mono">Not Linked</span>
-                        </h3>
-                        <p class="text-xs text-slate-400">Save and commit inventory directly to GitHub without downloading or moving local files.</p>
+                        <div class="flex items-center justify-between mb-1">
+                            <label class="text-[11px] font-semibold text-slate-300 flex items-center gap-1.5">
+                                <i data-lucide="git-branch" class="w-3.5 h-3.5 text-gold-400"></i>
+                                <span>GitHub Repository</span>
+                            </label>
+                            <span class="text-[10px] text-slate-500">e.g. goldenblossom/pos or paste full URL</span>
+                        </div>
+                        <input id="github-repo-input" type="text" value="alianik2007/goldenblossomboutiquepos" placeholder="alianik2007/goldenblossomboutiquepos" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 placeholder:text-slate-600 focus:outline-none focus:border-gold-500/60 transition-all font-mono">
                     </div>
-                </div>
-                <button onclick="closeModal('modal-github-sync')" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800" aria-label="Close">
-                    <i data-lucide="x" class="w-5 h-5"></i>
-                </button>
-            </div>
 
-            <!-- GitHub Configuration Form -->
-            <div class="space-y-3 bg-slate-950/60 p-4 rounded-2xl border border-slate-800">
-                <div class="space-y-2.5">
+                    <!-- Token field -->
                     <div>
-                        <label class="text-[10px] text-slate-400 block font-medium">GitHub Repository (owner/repo):</label>
-                        <input id="github-repo-input" type="text" placeholder="e.g. your-username/goldenblossomboutique-pos" class="mt-0.5 w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 font-mono focus:outline-none focus:border-sky-500/50">
-                    </div>
-                    <div>
-                        <div class="flex items-center justify-between">
-                            <label class="text-[10px] text-slate-400 block font-medium">GitHub Personal Access Token (PAT):</label>
-                            <a href="https://github.com/settings/tokens/new?scopes=repo&description=GoldenBlossomPOS" target="_blank" class="text-[10px] text-sky-400 hover:underline flex items-center gap-1">
-                                <span>Get Token (repo scope)</span>
+                        <div class="flex items-center justify-between mb-1">
+                            <label class="text-[11px] font-semibold text-slate-300 flex items-center gap-1.5">
+                                <i data-lucide="key" class="w-3.5 h-3.5 text-gold-400"></i>
+                                <span>Personal Access Token</span>
+                            </label>
+                            <a href="https://github.com/settings/tokens/new?scopes=repo&description=Golden-Blossom-POS-Sync" target="_blank" class="text-[10px] text-gold-400 hover:text-gold-300 hover:underline flex items-center gap-1">
+                                <span>Generate Token (1 Click)</span>
                                 <i data-lucide="external-link" class="w-3 h-3"></i>
                             </a>
                         </div>
-                        <input id="github-token-input" type="password" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" class="mt-0.5 w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 font-mono focus:outline-none focus:border-sky-500/50">
+                        <div class="relative">
+                            <input id="github-token-input" type="password" placeholder="ghp_xxxxxxxxxxxx or github_pat_xxxx" class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-3 pr-10 py-2 text-xs text-slate-100 placeholder:text-slate-600 focus:outline-none focus:border-gold-500/60 transition-all font-mono">
+                            <button type="button" onclick="toggleTokenVisibility('github-token-input')" class="absolute right-2.5 top-2 text-slate-500 hover:text-slate-300">
+                                <i data-lucide="eye" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                        <p class="text-[10px] text-slate-500 mt-1">Requires <b>repo</b> scope (or Fine-grained: <b>Contents: Read &amp; Write</b>). Stored locally in your browser.</p>
                     </div>
-                    <div>
-                        <label class="text-[10px] text-slate-400 block font-medium">Branch:</label>
-                        <input id="github-branch-input" type="text" value="main" class="mt-0.5 w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 font-mono focus:outline-none focus:border-sky-500/50">
+
+                    <!-- Branch field & Toggles -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                        <div>
+                            <label class="text-[11px] font-semibold text-slate-300 block mb-1">Branch Name</label>
+                            <input id="github-branch-input" type="text" value="main" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-gold-500/60 transition-all font-mono">
+                        </div>
+                        <div class="flex flex-col justify-end space-y-1.5">
+                            <label class="flex items-center gap-2 cursor-pointer text-[11px] text-slate-300">
+                                <input type="checkbox" id="github-auto-save-check" checked class="rounded bg-slate-950 border-slate-800 text-gold-500">
+                                <span>Auto-save on every change</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer text-[11px] text-slate-300">
+                                <input type="checkbox" id="github-auto-pull-check" checked class="rounded bg-slate-950 border-slate-800 text-gold-500">
+                                <span>Pull latest data on startup</span>
+                            </label>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Auto-sync directly to GitHub Toggle -->
-                <div class="pt-1">
-                    <label class="flex items-center gap-2 cursor-pointer text-xs text-slate-300">
-                        <input type="checkbox" id="github-auto-sync-toggle" class="rounded accent-sky-500 w-4 h-4 cursor-pointer" checked>
-                        <span>Auto-commit inventory to GitHub on every product/stock change</span>
-                    </label>
+                <!-- Action Buttons -->
+                <div class="flex flex-wrap gap-2 pt-1">
+                    <button type="button" onclick="handleConnectGitHub()" class="flex-1 bg-gold-500 hover:bg-gold-400 text-slate-950 font-bold px-4 py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-gold-500/20 transition-all">
+                        <i data-lucide="link" class="w-4 h-4"></i>
+                        <span>Save &amp; Connect GitHub</span>
+                    </button>
+                    <button type="button" onclick="handlePullFromGitHub()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold px-3 py-2.5 rounded-xl text-xs flex items-center gap-1.5 transition-all">
+                        <i data-lucide="download-cloud" class="w-4 h-4"></i>
+                        <span>Pull from GitHub</span>
+                    </button>
+                    <button type="button" onclick="handlePushToGitHub()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold px-3 py-2.5 rounded-xl text-xs flex items-center gap-1.5 transition-all">
+                        <i data-lucide="upload-cloud" class="w-4 h-4"></i>
+                        <span>Push to GitHub</span>
+                    </button>
+                    <button type="button" onclick="handleDisconnectGitHub()" class="bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 px-3 py-2.5 rounded-xl text-xs transition-all">
+                        Disconnect
+                    </button>
+                </div>
+            </div>
+
+            <!-- TAB 2: SUPABASE CLOUD DATABASE -->
+            <div id="sync-tab-supabase" class="space-y-4 hidden">
+                <div id="supabase-status-card" class="bg-slate-950/80 border border-slate-800 rounded-2xl p-4 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div id="supabase-status-indicator" class="w-3 h-3 rounded-full bg-slate-500"></div>
+                        <div>
+                            <span class="text-xs font-bold text-slate-200 block" id="supabase-status-title">Supabase Cloud Database</span>
+                            <span class="text-[11px] text-slate-400" id="supabase-status-desc">Connect directly with Project URL &amp; Anon Key (works without Vercel).</span>
+                        </div>
+                    </div>
+                    <span id="supabase-live-status" class="text-[10px] text-amber-300 font-mono">Not connected</span>
+                </div>
+
+                <div class="space-y-3 bg-slate-950/40 border border-slate-800/60 rounded-2xl p-4">
+                    <div>
+                        <label class="text-[11px] font-semibold text-slate-300 block mb-1">Supabase Project URL</label>
+                        <input id="supabase-url-input" type="text" placeholder="https://xxxxxxxxxxxx.supabase.co" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 placeholder:text-slate-600 focus:outline-none focus:border-gold-500/60 transition-all font-mono">
+                    </div>
+                    <div>
+                        <label class="text-[11px] font-semibold text-slate-300 block mb-1">Supabase Anon / Public Key</label>
+                        <div class="relative">
+                            <input id="supabase-key-input" type="password" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6..." class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-3 pr-10 py-2 text-xs text-slate-100 placeholder:text-slate-600 focus:outline-none focus:border-gold-500/60 transition-all font-mono">
+                            <button type="button" onclick="toggleTokenVisibility('supabase-key-input')" class="absolute right-2.5 top-2 text-slate-500 hover:text-slate-300">
+                                <i data-lucide="eye" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between pt-1">
+                        <button type="button" onclick="toggleSqlHelperModal()" class="text-[11px] text-gold-400 hover:text-gold-300 flex items-center gap-1 font-medium">
+                            <i data-lucide="code" class="w-3.5 h-3.5"></i>
+                            <span>View 1-Minute SQL Setup for Supabase</span>
+                        </button>
+                    </div>
                 </div>
 
                 <div class="flex gap-2 pt-1">
-                    <button type="button" onclick="saveGithubConfig()" class="flex-1 bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white font-bold text-xs py-2 px-3 rounded-xl transition-all shadow-md flex items-center justify-center gap-1.5">
-                        <i data-lucide="check" class="w-3.5 h-3.5"></i>
-                        <span>Save GitHub Settings</span>
+                    <button type="button" onclick="handleConnectSupabase()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20 transition-all">
+                        <i data-lucide="database" class="w-4 h-4"></i>
+                        <span>Connect &amp; Sync Supabase</span>
                     </button>
-                    <button type="button" onclick="clearGithubConfig()" class="bg-slate-800 hover:bg-slate-700 text-rose-400 text-xs px-3 py-2 rounded-xl border border-slate-700 transition-colors">
-                        Clear
+                    <button type="button" onclick="handleDisconnectSupabase()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold px-3 py-2.5 rounded-xl text-xs transition-all">
+                        Disconnect
                     </button>
+                </div>
+
+                <!-- Optional Legacy Sign-in Accordion for staff accounts -->
+                <details class="bg-slate-950/40 border border-slate-800/60 rounded-xl p-3 text-xs text-slate-400">
+                    <summary class="cursor-pointer text-slate-300 font-semibold flex items-center justify-between">
+                        <span>Staff Email / Password Login (Optional)</span>
+                        <i data-lucide="chevron-down" class="w-3.5 h-3.5"></i>
+                    </summary>
+                    <form onsubmit="connectSharedDatabase(event)" class="space-y-2 mt-3">
+                        <input id="shared-db-email" type="email" placeholder="staff@goldenblossomboutique.com" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-100">
+                        <input id="shared-db-password" type="password" placeholder="Staff password" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-100">
+                        <button type="submit" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg text-xs font-semibold">Sign in with Supabase Auth</button>
+                    </form>
+                </details>
+            </div>
+
+            <!-- TAB 3: LOCAL / FOLDER & DESKTOP GIT -->
+            <div id="sync-tab-local" class="space-y-4 hidden">
+                <div class="bg-slate-950/80 border border-slate-800 rounded-2xl p-4 space-y-2">
+                    <h4 class="text-xs font-bold text-slate-200">Local Folder Anti-Reset Engine</h4>
+                    <p class="text-xs text-slate-400">Saves your catalog and sales directly to <code class="text-gold-400">data.js</code> and <code class="text-gold-400">data.json</code> in this folder.</p>
+                    <div class="flex flex-wrap gap-2 pt-2">
+                        <button onclick="connectFolder()" class="bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 text-xs font-semibold px-3 py-2 rounded-xl flex items-center gap-1.5">
+                            <i data-lucide="folder-check" class="w-4 h-4"></i>
+                            <span>Link Folder</span>
+                        </button>
+                        <button onclick="downloadDataJs()" class="bg-gold-500/20 hover:bg-gold-500/30 text-gold-300 border border-gold-500/30 text-xs font-semibold px-3 py-2 rounded-xl flex items-center gap-1.5">
+                            <i data-lucide="download" class="w-4 h-4"></i>
+                            <span>Export data.js</span>
+                        </button>
+                        <button onclick="document.getElementById('import-data-file-input').click()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold px-3 py-2 rounded-xl flex items-center gap-1.5">
+                            <i data-lucide="upload" class="w-4 h-4"></i>
+                            <span>Import data.js / JSON</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="desktop-git-section" class="bg-slate-950/40 border border-slate-800/60 rounded-2xl p-4 space-y-2">
+                    <h4 class="text-xs font-bold text-slate-200 flex items-center gap-2">
+                        <i data-lucide="terminal" class="w-4 h-4 text-sky-400"></i>
+                        <span>Desktop Git Integration</span>
+                    </h4>
+                    <p class="text-xs text-slate-400" id="desktop-git-status-text">Local Git repository initialized on branch main.</p>
+                    <div class="flex gap-2 pt-1" id="desktop-git-actions">
+                        <button type="button" onclick="handleDesktopGitPush()" class="bg-sky-600/20 hover:bg-sky-600/30 text-sky-300 border border-sky-500/30 text-xs font-semibold px-3 py-2 rounded-xl flex items-center gap-1.5">
+                            <i data-lucide="git-commit" class="w-4 h-4"></i>
+                            <span>Git Commit &amp; Push (Local)</span>
+                        </button>
+                    </div>
                 </div>
             </div>
 
-            <!-- GitHub Actions Grid -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <button type="button" onclick="saveInventoryToGithub(true)" class="bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 text-xs font-semibold p-3 rounded-xl flex items-center justify-center gap-2 transition-all">
-                    <i data-lucide="upload-cloud" class="w-4 h-4"></i>
-                    <span>Push Inventory to GitHub</span>
-                </button>
-                <button type="button" onclick="pullInventoryFromGithub()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold p-3 rounded-xl flex items-center justify-center gap-2 transition-all">
-                    <i data-lucide="download-cloud" class="w-4 h-4"></i>
-                    <span>Pull from GitHub</span>
+            <!-- Hidden container for backward compatibility -->
+            <div id="modal-shared-database" class="hidden">
+                <span id="shared-db-modal-status"></span>
+            </div>
+
+            <!-- Footer info -->
+            <div class="pt-2 border-t border-slate-800 text-right">
+                <button onclick="closeModal('modal-sync-center')" class="px-4 py-2 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl transition-all">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SQL SETUP HELPER MODAL -->
+    <div id="modal-supabase-sql" class="fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-lg w-full space-y-4 shadow-2xl">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-xl bg-gold-500/10 border border-gold-500/20 flex items-center justify-center text-gold-400">
+                        <i data-lucide="code" class="w-4 h-4"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-100">Supabase 30-Second SQL Setup</h3>
+                        <p class="text-[11px] text-slate-400">Paste this into your Supabase SQL Editor and click RUN.</p>
+                    </div>
+                </div>
+                <button onclick="toggleSqlHelperModal()" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800">
+                    <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
 
-            <!-- Direct App Deployer Button -->
-            <button type="button" onclick="deployAppCodeToGithub()" class="w-full bg-gradient-to-r from-gold-500 via-amber-400 to-gold-600 hover:from-gold-400 hover:to-gold-500 text-slate-950 font-bold text-xs py-2.5 px-4 rounded-xl transition-all shadow-md flex items-center justify-center gap-2">
-                <i data-lucide="rocket" class="w-4 h-4"></i>
-                <span>Deploy App Code (index.html &amp; Vercel Config) to GitHub</span>
-            </button>
+            <div class="relative">
+                <pre class="bg-slate-950 border border-slate-800 rounded-xl p-3 text-[11px] text-emerald-400 font-mono overflow-x-auto max-h-56 leading-relaxed" id="supabase-sql-code">create table if not exists public.gbb_shared_data (
+  id smallint primary key default 1 check (id = 1),
+  payload jsonb not null,
+  updated_at timestamptz not null default now()
+);
 
-            <!-- Info Box -->
-            <div class="bg-sky-500/5 border border-sky-500/20 rounded-2xl p-3 text-[11px] text-slate-300 space-y-1">
-                <p class="font-bold text-sky-400 flex items-center gap-1">
-                    <i data-lucide="info" class="w-3.5 h-3.5"></i>
-                    <span>How it works:</span>
-                </p>
-                <p class="text-slate-400">
-                    Whenever you add/edit products or make sales, this commits directly into your GitHub repository's <code class="text-slate-200">data.json</code> and <code class="text-slate-200">data.js</code>. You never need to copy files or download anything locally!
-                </p>
+alter table public.gbb_shared_data enable row level security;
+grant select, insert, update on public.gbb_shared_data to anon, authenticated;
+
+create policy "Allow POS read access"
+  on public.gbb_shared_data for select using (true);
+
+create policy "Allow POS upsert access"
+  on public.gbb_shared_data for all using (true) with check (true);</pre>
+                <button type="button" onclick="copySupabaseSql()" class="absolute top-2 right-2 bg-slate-800 hover:bg-slate-700 text-xs text-gold-400 px-2.5 py-1 rounded-lg border border-slate-700 flex items-center gap-1 shadow">
+                    <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                    <span id="copy-sql-btn-text">Copy SQL</span>
+                </button>
+            </div>
+
+            <div class="pt-2 border-t border-slate-800 text-right">
+                <button onclick="toggleSqlHelperModal()" class="px-4 py-2 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl">Done</button>
             </div>
         </div>
     </div>
@@ -1244,16 +1368,6 @@
         let sharedDbSaveTimer = null;
         let sharedDbPollTimer = null;
         let sharedDbWritePending = false;
-        let sharedDbRealtimeChannel = null;
-        let sharedDbDirectSync = false;
-        let githubConfig = {
-            repo: localStorage.getItem('gbb_github_repo') || '',
-            token: localStorage.getItem('gbb_github_token') || '',
-            branch: localStorage.getItem('gbb_github_branch') || 'main',
-            autoSync: localStorage.getItem('gbb_github_auto_sync') !== 'false'
-        };
-        let githubSaveTimer = null;
-        let githubSyncing = false;
         (function detectNode() {
             try {
                 if (typeof nw !== 'undefined') {
@@ -1398,6 +1512,12 @@
                 console.warn("localStorage save error:", e);
             }
 
+            // 2. GitHub Auto-Sync: automatically pushes to GitHub repository
+            if (window.gbbGitHub && window.gbbGitHub.isConfigured() && window.gbbGitHub.config.autoSave) {
+                window.gbbGitHub.scheduleAutoSave(exportPayload);
+            }
+
+            // 3. Shared Folder (Electron)
             if (sharedFolderPath && electronIpc && !sharedFolderError) {
                 electronIpc.invoke('shared-folder:save', exportPayload).then(result => {
                     if (result.ok) {
@@ -1415,31 +1535,38 @@
                 });
             }
 
-            if (sharedDbClient && (sharedDbSession || sharedDbDirectSync)) {
+            // 4. Supabase Cloud Database: direct sync with Anon Key or session
+            if (sharedDbClient) {
                 const sharedPayload = JSON.parse(JSON.stringify(exportPayload));
                 clearTimeout(sharedDbSaveTimer);
                 sharedDbWritePending = true;
-                updateSharedDatabaseStatus('Saving to cloud...', true);
+                updateSharedDatabaseStatus('Saving changes...');
                 sharedDbSaveTimer = setTimeout(async () => {
-                    const { error } = await sharedDbClient
-                        .from('gbb_shared_data')
-                        .upsert({ id: 1, payload: sharedPayload, updated_at: sharedPayload.updatedAt });
-                    sharedDbWritePending = false;
-                    if (error) {
-                        console.error('Shared database save error:', error);
-                        updateSharedDatabaseStatus('Cloud save failed: ' + error.message, false);
-                    } else {
-                        updateSharedDatabaseStatus('Cloud Synced ⚡', true);
+                    try {
+                        const { error } = await sharedDbClient
+                            .from('gbb_shared_data')
+                            .upsert({ id: 1, payload: sharedPayload, updated_at: sharedPayload.updatedAt });
+                        sharedDbWritePending = false;
+                        if (error) {
+                            console.error('Shared database save error:', error);
+                            updateSharedDatabaseStatus('Save failed');
+                            updateCloudIndicator('error');
+                        } else {
+                            updateSharedDatabaseStatus('Synced');
+                            updateCloudIndicator('connected');
+                        }
+                    } catch(dbErr) {
+                        sharedDbWritePending = false;
+                        console.error('Shared database save error:', dbErr);
+                        updateSharedDatabaseStatus('Save error');
+                        updateCloudIndicator('error');
                     }
-                }, 300);
+                }, 350);
             }
 
-            // 1.5. If configured, save/commit directly to GitHub repository (debounced)
-            if (githubConfig && githubConfig.repo && githubConfig.token && githubConfig.autoSync) {
-                clearTimeout(githubSaveTimer);
-                githubSaveTimer = setTimeout(() => {
-                    saveInventoryToGithub(false);
-                }, 2500);
+            // 5. Desktop Local Git (if Electron and git remote configured)
+            if (electronIpc && window.gbbLocalGitEnabled) {
+                electronIpc.invoke('git:commit-and-push', 'Auto-save POS: ' + new Date().toLocaleTimeString()).catch(() => {});
             }
 
             // 2. If running under Node.js / Electron / NW.js: save to data.js & data.json directly
@@ -1487,19 +1614,7 @@
 
             if (!dot || !text) return;
 
-            if (mode === 'github-synced' || (!mode && githubConfig && githubConfig.repo && githubConfig.token)) {
-                dot.className = "w-2 h-2 rounded-full bg-sky-400";
-                text.innerText = "GitHub: Synced";
-                if (badge) badge.innerText = `GitHub Active (${githubConfig.repo})`;
-            } else if (mode === 'github-saving') {
-                dot.className = "w-2 h-2 rounded-full bg-amber-400 animate-pulse";
-                text.innerText = "GitHub: Saving...";
-                if (badge) badge.innerText = "Pushing commit to GitHub...";
-            } else if (mode === 'github-error') {
-                dot.className = "w-2 h-2 rounded-full bg-rose-400";
-                text.innerText = "GitHub: Error";
-                if (badge) badge.innerText = "GitHub Push Failed";
-            } else if (mode === 'saved-node') {
+            if (mode === 'saved-node') {
                 dot.className = "w-2 h-2 rounded-full bg-emerald-400";
                 text.innerText = "Folder File: Saved";
                 if (badge) badge.innerText = "Live File Active (Electron/Node)";
@@ -1522,317 +1637,792 @@
             }
         }
 
-        function updateSharedDatabaseStatus(message, isConnected = null) {
+        // UTF-8 BASE64 ENCODER / DECODER (Handles Arabic, Caftan descriptions & emojis safely)
+        function utf8ToBase64(str) {
+            const bytes = new TextEncoder().encode(str);
+            let binary = '';
+            const len = bytes.byteLength;
+            for (let i = 0; i < len; i++) {
+                binary += String.fromCharCode(bytes[i]);
+            }
+            return btoa(binary);
+        }
+
+        function base64ToUtf8(base64Str) {
+            const clean = base64Str.replace(/\s/g, '');
+            const binary = atob(clean);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) {
+                bytes[i] = binary.charCodeAt(i);
+            }
+            return new TextDecoder('utf-8').decode(bytes);
+        }
+
+        function updateSharedDatabaseStatus(message) {
             const status = document.getElementById('shared-db-status');
             const modalStatus = document.getElementById('shared-db-modal-status');
-            const modalDot = document.getElementById('shared-db-status-dot');
-            const modalBadge = document.getElementById('cloud-sync-badge');
-            const headerDot = document.getElementById('cloud-sync-header-dot');
-            const headerText = document.getElementById('cloud-sync-header-text');
-
+            const supabaseLive = document.getElementById('supabase-live-status');
             if (status) status.innerText = message;
             if (modalStatus) modalStatus.innerText = message;
+            if (supabaseLive) supabaseLive.innerText = message;
+        }
 
-            const connected = isConnected !== null ? isConnected : (Boolean(sharedDbClient) && (Boolean(sharedDbSession) || sharedDbDirectSync));
+        function updateCloudIndicator(status) {
+            const dot = document.getElementById('cloud-sync-dot');
+            const text = document.getElementById('cloud-sync-text');
+            const cardIndicator = document.getElementById('supabase-status-indicator');
+            const cardTitle = document.getElementById('supabase-status-title');
+            if (!dot) return;
 
-            if (modalDot) {
-                modalDot.className = connected ? "w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" : "w-2.5 h-2.5 rounded-full bg-slate-600";
-            }
-            if (modalBadge) {
-                modalBadge.className = connected ? "text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-500/30 font-mono" : "text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full border border-slate-700 font-mono";
-                modalBadge.innerText = connected ? "Live Connected" : "Offline";
-            }
-            if (headerDot) {
-                headerDot.className = connected ? "w-2 h-2 rounded-full bg-emerald-400 animate-pulse" : "w-2 h-2 rounded-full bg-slate-600";
-            }
-            if (headerText) {
-                headerText.innerText = connected ? "Cloud Synced" : "Cloud Sync";
+            if (status === 'connected') {
+                dot.className = "w-2 h-2 rounded-full bg-emerald-400 animate-pulse";
+                if (text) text.innerText = "Cloud: Synced";
+                if (cardIndicator) cardIndicator.className = "w-3 h-3 rounded-full bg-emerald-400";
+                if (cardTitle) cardTitle.innerText = "Supabase Cloud Database (Connected)";
+            } else if (status === 'syncing') {
+                dot.className = "w-2 h-2 rounded-full bg-sky-400 animate-pulse";
+                if (text) text.innerText = "Cloud: Syncing...";
+                if (cardIndicator) cardIndicator.className = "w-3 h-3 rounded-full bg-sky-400 animate-pulse";
+            } else if (status === 'error') {
+                dot.className = "w-2 h-2 rounded-full bg-rose-400";
+                if (text) text.innerText = "Cloud: Error";
+                if (cardIndicator) cardIndicator.className = "w-3 h-3 rounded-full bg-rose-400";
+                if (cardTitle) cardTitle.innerText = "Supabase Connection Error";
+            } else {
+                dot.className = "w-2 h-2 rounded-full bg-slate-500";
+                if (text) text.innerText = "Cloud DB";
+                if (cardIndicator) cardIndicator.className = "w-3 h-3 rounded-full bg-slate-500";
+                if (cardTitle) cardTitle.innerText = "Supabase Cloud Database";
             }
         }
 
-        function openSharedDatabaseModal() {
-            document.getElementById('modal-shared-database').classList.remove('hidden');
-            
-            const savedUrl = localStorage.getItem('gbb_supabase_url') || '';
-            const savedKey = localStorage.getItem('gbb_supabase_key') || '';
-            const directSync = localStorage.getItem('gbb_supabase_direct_sync') !== 'false';
-
-            const urlInput = document.getElementById('shared-db-custom-url');
-            const keyInput = document.getElementById('shared-db-custom-key');
-            const toggle = document.getElementById('shared-db-direct-sync-toggle');
-
-            if (urlInput && !urlInput.value) urlInput.value = savedUrl;
-            if (keyInput && !keyInput.value) keyInput.value = savedKey;
-            if (toggle) toggle.checked = directSync;
-
-            if (sharedDbSession && sharedDbSession.user && sharedDbSession.user.email) {
-                const emailInput = document.getElementById('shared-db-email');
-                if (emailInput) emailInput.value = sharedDbSession.user.email;
-            }
-            if (window.lucide) lucide.createIcons();
-        }
-
-        function applySharedDatabaseUser(session) {
-            const metadata = (session && session.user && session.user.app_metadata) || {};
-            const role = ['owner', 'manager', 'cashier'].includes(metadata.role) ? metadata.role : 'cashier';
-            state.currentUser = (session && session.user && session.user.email) || 'Staff';
-            state.currentRole = role;
-            updateRoleUI();
-        }
-
-        async function initializeSharedDatabase() {
-            let config = null;
-
-            // 1. Check custom credentials saved in localStorage (works locally via file://, on other devices, or localhost)
-            const localUrl = localStorage.getItem('gbb_supabase_url');
-            const localKey = localStorage.getItem('gbb_supabase_key');
-            if (localUrl && localKey) {
-                config = { configured: true, url: localUrl.trim(), anonKey: localKey.trim() };
+        // ==============================================================
+        // GITHUB AUTO-SYNC ENGINE
+        // ==============================================================
+        class GitHubSyncService {
+            constructor() {
+                this.config = this.loadConfig();
+                this.dataSha = null;
+                this.jsSha = null;
+                this.syncTimer = null;
+                this.isSyncing = false;
+                this.lastSyncTime = null;
             }
 
-            // 2. If not in localStorage and running via HTTP/HTTPS, fetch from /api/config (Vercel deployment)
-            if (!config && window.location.protocol !== 'file:') {
+            loadConfig() {
                 try {
-                    const response = await fetch('/api/config', { cache: 'no-store' });
-                    if (response.ok) {
-                        const json = await response.json();
-                        if (json && json.configured) config = json;
+                    const raw = localStorage.getItem('gbb_github_config');
+                    if (raw) {
+                        return Object.assign({
+                            enabled: false,
+                            repo: 'alianik2007/goldenblossomboutiquepos',
+                            token: '',
+                            branch: 'main',
+                            autoSave: true,
+                            autoPull: true
+                        }, JSON.parse(raw));
                     }
-                } catch(e) {
-                    console.log('No /api/config endpoint detected.');
+                } catch(e) {}
+                return {
+                    enabled: false,
+                    repo: 'alianik2007/goldenblossomboutiquepos',
+                    token: '',
+                    branch: 'main',
+                    autoSave: true,
+                    autoPull: true
+                };
+            }
+
+            saveConfig(cfg) {
+                this.config = Object.assign(this.config, cfg);
+                localStorage.setItem('gbb_github_config', JSON.stringify(this.config));
+                this.updateUI();
+            }
+
+            isConfigured() {
+                return !!(this.config.enabled && this.config.repo && this.config.token);
+            }
+
+            getParsedRepo(customRepo) {
+                const target = customRepo || this.config.repo;
+                if (!target) return null;
+                let clean = target.trim()
+                    .replace(/^https?:\/\/github\.com\//i, '')
+                    .replace(/\.git$/i, '')
+                    .replace(/^\/+|\/+$/g, '');
+                const parts = clean.split('/');
+                if (parts.length >= 2) {
+                    return { owner: parts[0], repo: parts[1], fullName: `${parts[0]}/${parts[1]}` };
+                }
+                return null;
+            }
+
+            getHeaders(customToken) {
+                const token = (customToken || this.config.token || '').trim();
+                return {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/vnd.github+json',
+                    'X-GitHub-Api-Version': '2022-11-28'
+                };
+            }
+
+            setSyncStatus(status, message) {
+                const dot = document.getElementById('github-sync-dot');
+                const text = document.getElementById('github-sync-text');
+                const cardDot = document.getElementById('github-status-indicator');
+                const cardTitle = document.getElementById('github-status-title');
+                const cardDesc = document.getElementById('github-status-desc');
+                const lastTimeEl = document.getElementById('github-last-sync-time');
+                const panelText = document.getElementById('panel-github-status-text');
+
+                if (dot) {
+                    if (status === 'synced') {
+                        dot.className = "w-2 h-2 rounded-full bg-emerald-400";
+                        if (text) text.innerText = "GitHub: Synced";
+                        if (cardDot) cardDot.className = "w-3 h-3 rounded-full bg-emerald-400";
+                        if (cardTitle) cardTitle.innerText = `Connected (${this.config.repo})`;
+                        if (cardDesc) cardDesc.innerText = message || "Auto-save is active. Changes commit to GitHub.";
+                    } else if (status === 'syncing') {
+                        dot.className = "w-2 h-2 rounded-full bg-sky-400 animate-pulse";
+                        if (text) text.innerText = "GitHub: Saving...";
+                        if (cardDot) cardDot.className = "w-3 h-3 rounded-full bg-sky-400 animate-pulse";
+                        if (cardDesc) cardDesc.innerText = message || "Pushing updates to GitHub repository...";
+                    } else if (status === 'error') {
+                        dot.className = "w-2 h-2 rounded-full bg-rose-400";
+                        if (text) text.innerText = "GitHub: Error";
+                        if (cardDot) cardDot.className = "w-3 h-3 rounded-full bg-rose-400";
+                        if (cardTitle) cardTitle.innerText = "GitHub Sync Issue";
+                        if (cardDesc) cardDesc.innerText = message || "Check your token or repository permissions.";
+                    } else {
+                        dot.className = "w-2 h-2 rounded-full bg-amber-400";
+                        if (text) text.innerText = "GitHub: Connect";
+                        if (cardDot) cardDot.className = "w-3 h-3 rounded-full bg-amber-400";
+                        if (cardTitle) cardTitle.innerText = "GitHub Not Connected";
+                        if (cardDesc) cardDesc.innerText = "Connect a GitHub repository to enable automatic cloud backups.";
+                    }
+                }
+
+                if (panelText) {
+                    panelText.innerText = this.isConfigured() ? `Connected to ${this.config.repo} (${this.config.branch})` : "Auto-save catalog & sales to GitHub";
+                }
+
+                if (lastTimeEl && this.lastSyncTime) {
+                    lastTimeEl.innerText = this.lastSyncTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                 }
             }
 
-            if (!config || !config.configured) {
-                updateSharedDatabaseStatus('Offline (Click Cloud Sync to connect)', false);
-                return;
-            }
+            updateUI() {
+                const repoInput = document.getElementById('github-repo-input');
+                const tokenInput = document.getElementById('github-token-input');
+                const branchInput = document.getElementById('github-branch-input');
+                const autoSaveCheck = document.getElementById('github-auto-save-check');
+                const autoPullCheck = document.getElementById('github-auto-pull-check');
 
-            if (!window.supabase || !window.supabase.createClient) {
-                updateSharedDatabaseStatus('Supabase library not loaded', false);
-                return;
-            }
+                if (repoInput && !repoInput.value) repoInput.value = this.config.repo || '';
+                if (tokenInput && !tokenInput.value) tokenInput.value = this.config.token || '';
+                if (branchInput && !branchInput.value) branchInput.value = this.config.branch || 'main';
+                if (autoSaveCheck) autoSaveCheck.checked = !!this.config.autoSave;
+                if (autoPullCheck) autoPullCheck.checked = !!this.config.autoPull;
 
-            try {
-                sharedDbClient = window.supabase.createClient(config.url, config.anonKey);
-                
-                // Set default direct sync mode if not explicitly turned off
-                sharedDbDirectSync = localStorage.getItem('gbb_supabase_direct_sync') !== 'false';
-
-                const { data, error } = await sharedDbClient.auth.getSession();
-                if (!error && data && data.session) {
-                    sharedDbSession = data.session;
-                    applySharedDatabaseUser(sharedDbSession);
-                }
-
-                if (sharedDbSession || sharedDbDirectSync) {
-                    await loadSharedDatabaseData(false);
-                    startSharedDatabaseRefresh();
-                    updateSharedDatabaseStatus('Live Cloud Synced ⚡', true);
+                if (this.isConfigured()) {
+                    this.setSyncStatus('synced', 'Connected to GitHub repository.');
                 } else {
-                    updateSharedDatabaseStatus('Configured (Sign in or enable Direct Sync)', false);
+                    this.setSyncStatus('disconnected', 'GitHub Not Connected');
+                }
+            }
+
+            async testConnection(repoStr, tokenStr) {
+                const parsed = this.getParsedRepo(repoStr);
+                if (!parsed) throw new Error('Repository must be "owner/repo" (e.g. goldenblossom/pos) or a GitHub URL.');
+                if (!tokenStr || !tokenStr.trim()) throw new Error('GitHub Personal Access Token is required.');
+
+                const res = await fetch(`https://api.github.com/repos/${parsed.owner}/${parsed.repo}`, {
+                    headers: this.getHeaders(tokenStr)
+                });
+
+                if (res.status === 401) throw new Error('Invalid GitHub token. Please verify your token.');
+                if (res.status === 404) throw new Error(`Repository "${parsed.fullName}" not found, or your token doesn't have permission to access it.`);
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    throw new Error(err.message || `GitHub returned HTTP ${res.status}`);
                 }
 
-                sharedDbClient.auth.onAuthStateChange((_event, session) => {
-                    sharedDbSession = session;
-                    if (session) {
-                        applySharedDatabaseUser(session);
-                        loadSharedDatabaseData(false);
-                        startSharedDatabaseRefresh();
-                        updateSharedDatabaseStatus('Live Cloud Synced ⚡', true);
-                    } else if (!sharedDbDirectSync) {
-                        clearInterval(sharedDbPollTimer);
-                        if (sharedDbRealtimeChannel) {
-                            try { sharedDbClient.removeChannel(sharedDbRealtimeChannel); } catch(e){}
-                        }
-                        updateSharedDatabaseStatus('Signed out', false);
+                const data = await res.json();
+                return {
+                    fullName: data.full_name,
+                    defaultBranch: data.default_branch || 'main',
+                    private: data.private
+                };
+            }
+
+            async pullFromGitHub(silent = false) {
+                if (!this.isConfigured()) return null;
+                const parsed = this.getParsedRepo();
+                if (!parsed) return null;
+
+                try {
+                    if (!silent) this.setSyncStatus('syncing', 'Pulling data from GitHub...');
+                    const branch = encodeURIComponent(this.config.branch || 'main');
+                    const url = `https://api.github.com/repos/${parsed.owner}/${parsed.repo}/contents/data.json?ref=${branch}`;
+
+                    const res = await fetch(url, { headers: this.getHeaders(), cache: 'no-store' });
+                    if (res.status === 404) {
+                        this.dataSha = null;
+                        if (!silent) showToast('No remote data.json found on GitHub yet. Push to initialize it!', 'gold');
+                        this.setSyncStatus('synced', 'Connected (Ready to push first version)');
+                        return null;
                     }
-                });
-            } catch(error) {
-                console.error('Shared database initialization error:', error);
-                updateSharedDatabaseStatus('Connection error: ' + error.message, false);
+                    if (!res.ok) {
+                        const err = await res.json().catch(() => ({}));
+                        throw new Error(err.message || `HTTP ${res.status}`);
+                    }
+
+                    const fileObj = await res.json();
+                    this.dataSha = fileObj.sha;
+
+                    try {
+                        const jsRes = await fetch(`https://api.github.com/repos/${parsed.owner}/${parsed.repo}/contents/data.js?ref=${branch}`, {
+                            headers: this.getHeaders(),
+                            cache: 'no-store'
+                        });
+                        if (jsRes.ok) {
+                            const jsObj = await jsRes.json();
+                            this.jsSha = jsObj.sha;
+                        }
+                    } catch(e) {}
+
+                    const decodedText = base64ToUtf8(fileObj.content);
+                    const remotePayload = JSON.parse(decodedText);
+
+                    if (remotePayload && Array.isArray(remotePayload.products)) {
+                        const remoteTime = new Date(remotePayload.updatedAt || 0).getTime();
+                        const localTime = new Date(state.updatedAt || 0).getTime();
+
+                        if (remoteTime > localTime || !silent) {
+                            applySharedFolderData(remotePayload);
+                            this.lastSyncTime = new Date();
+                            this.setSyncStatus('synced', `Synced with GitHub (${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})`);
+                            if (!silent) showToast('Catalog & sales updated from GitHub!', 'success');
+                        } else {
+                            this.setSyncStatus('synced', 'Up to date with GitHub');
+                        }
+                        return remotePayload;
+                    }
+                } catch(err) {
+                    console.error('GitHub pull error:', err);
+                    this.setSyncStatus('error', err.message);
+                    if (!silent) showToast('Could not load from GitHub: ' + err.message, 'error');
+                    return null;
+                }
+            }
+
+            scheduleAutoSave(payload) {
+                if (!this.isConfigured() || !this.config.autoSave) return;
+                clearTimeout(this.syncTimer);
+                this.setSyncStatus('syncing', 'GitHub: Auto-save queued...');
+                this.syncTimer = setTimeout(() => {
+                    this.pushToGitHub(payload, true);
+                }, 3500);
+            }
+
+            async pushToGitHub(payload, isAuto = false) {
+                if (!this.isConfigured()) return;
+                const parsed = this.getParsedRepo();
+                if (!parsed) return;
+
+                if (this.isSyncing) {
+                    if (isAuto) this.scheduleAutoSave(payload);
+                    return;
+                }
+
+                try {
+                    this.isSyncing = true;
+                    this.setSyncStatus('syncing', 'Saving to GitHub...');
+                    const branch = this.config.branch || 'main';
+
+                    if (!this.dataSha) {
+                        try {
+                            const check = await fetch(`https://api.github.com/repos/${parsed.owner}/${parsed.repo}/contents/data.json?ref=${encodeURIComponent(branch)}`, {
+                                headers: this.getHeaders(),
+                                cache: 'no-store'
+                            });
+                            if (check.ok) {
+                                const checkData = await check.json();
+                                this.dataSha = checkData.sha;
+                            }
+                        } catch(e) {}
+                    }
+
+                    const jsonStr = JSON.stringify(payload, null, 2) + '\n';
+                    const jsStr = 'window.GBB_DATA = ' + JSON.stringify(payload, null, 2) + ';\n';
+                    const commitMsg = isAuto
+                        ? `Auto-save boutique POS: ${new Date().toLocaleTimeString()} [skip ci]`
+                        : `Update boutique POS catalog & sales [skip ci]`;
+
+                    const putJson = {
+                        message: commitMsg,
+                        content: utf8ToBase64(jsonStr),
+                        branch: branch
+                    };
+                    if (this.dataSha) putJson.sha = this.dataSha;
+
+                    const resJson = await fetch(`https://api.github.com/repos/${parsed.owner}/${parsed.repo}/contents/data.json`, {
+                        method: 'PUT',
+                        headers: {
+                            ...this.getHeaders(),
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(putJson)
+                    });
+
+                    if (resJson.status === 409) {
+                        const refetch = await fetch(`https://api.github.com/repos/${parsed.owner}/${parsed.repo}/contents/data.json?ref=${encodeURIComponent(branch)}`, {
+                            headers: this.getHeaders(),
+                            cache: 'no-store'
+                        });
+                        if (refetch.ok) {
+                            const refetchData = await refetch.json();
+                            this.dataSha = refetchData.sha;
+                            putJson.sha = this.dataSha;
+                            const retry = await fetch(`https://api.github.com/repos/${parsed.owner}/${parsed.repo}/contents/data.json`, {
+                                method: 'PUT',
+                                headers: { ...this.getHeaders(), 'Content-Type': 'application/json' },
+                                body: JSON.stringify(putJson)
+                            });
+                            if (!retry.ok) throw new Error('Conflict writing to GitHub');
+                            const retryData = await retry.json();
+                            this.dataSha = retryData.content.sha;
+                        }
+                    } else if (!resJson.ok) {
+                        const err = await resJson.json().catch(() => ({}));
+                        throw new Error(err.message || `HTTP ${resJson.status}`);
+                    } else {
+                        const resData = await resJson.json();
+                        this.dataSha = resData.content.sha;
+                    }
+
+                    try {
+                        if (!this.jsSha) {
+                            const checkJs = await fetch(`https://api.github.com/repos/${parsed.owner}/${parsed.repo}/contents/data.js?ref=${encodeURIComponent(branch)}`, {
+                                headers: this.getHeaders(),
+                                cache: 'no-store'
+                            });
+                            if (checkJs.ok) {
+                                const checkJsData = await checkJs.json();
+                                this.jsSha = checkJsData.sha;
+                            }
+                        }
+
+                        const putJs = {
+                            message: `Auto-save data.js [skip ci]`,
+                            content: utf8ToBase64(jsStr),
+                            branch: branch
+                        };
+                        if (this.jsSha) putJs.sha = this.jsSha;
+
+                        const resJs = await fetch(`https://api.github.com/repos/${parsed.owner}/${parsed.repo}/contents/data.js`, {
+                            method: 'PUT',
+                            headers: { ...this.getHeaders(), 'Content-Type': 'application/json' },
+                            body: JSON.stringify(putJs)
+                        });
+                        if (resJs.ok) {
+                            const jsData = await resJs.json();
+                            this.jsSha = jsData.content.sha;
+                        }
+                    } catch(e) {
+                        console.warn('data.js push notice:', e);
+                    }
+
+                    this.lastSyncTime = new Date();
+                    this.setSyncStatus('synced', `Saved to GitHub (${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})`);
+                    if (!isAuto) showToast('Saved & pushed to GitHub successfully!', 'success');
+                } catch(err) {
+                    console.error('GitHub push error:', err);
+                    this.setSyncStatus('error', err.message);
+                    if (!isAuto) showToast('GitHub push failed: ' + err.message, 'error');
+                } finally {
+                    this.isSyncing = false;
+                }
             }
         }
 
-        async function saveCustomCloudConfig() {
-            const urlInput = document.getElementById('shared-db-custom-url');
-            const keyInput = document.getElementById('shared-db-custom-key');
-            const toggle = document.getElementById('shared-db-direct-sync-toggle');
+        // ==============================================================
+        // SYNC CENTER MODAL & ACTIONS
+        // ==============================================================
+        function openSyncCenterModal(tab = 'github') {
+            const modal = document.getElementById('modal-sync-center');
+            if (!modal) return;
+            modal.classList.remove('hidden');
+            switchSyncTab(tab);
 
-            const url = urlInput ? urlInput.value.trim() : '';
-            const key = keyInput ? keyInput.value.trim() : '';
-            const isDirect = toggle ? toggle.checked : true;
+            if (window.gbbGitHub) {
+                window.gbbGitHub.updateUI();
+            }
+
+            const supUrl = localStorage.getItem('gbb_supabase_url') || '';
+            const supKey = localStorage.getItem('gbb_supabase_key') || '';
+            const urlIn = document.getElementById('supabase-url-input');
+            const keyIn = document.getElementById('supabase-key-input');
+            if (urlIn && !urlIn.value) urlIn.value = supUrl;
+            if (keyIn && !keyIn.value) keyIn.value = supKey;
+
+            if (electronIpc) {
+                electronIpc.invoke('git:status').then(res => {
+                    const statusText = document.getElementById('desktop-git-status-text');
+                    if (statusText && res) {
+                        if (res.remote) {
+                            statusText.innerText = `Local repository on branch ${res.branch}. Remote: ${res.remote}`;
+                            window.gbbLocalGitEnabled = true;
+                        } else {
+                            statusText.innerText = `Local Git initialized on branch ${res.branch}. No remote origin set yet.`;
+                        }
+                    }
+                }).catch(() => {});
+            }
+
+            lucide.createIcons();
+        }
+
+        function openSharedDatabaseModal(tab = 'supabase') {
+            openSyncCenterModal(tab);
+        }
+
+        function switchSyncTab(tab) {
+            const tabs = ['github', 'supabase', 'local'];
+            tabs.forEach(t => {
+                const el = document.getElementById(`sync-tab-${t}`);
+                const btn = document.getElementById(`tab-btn-${t}`);
+                if (el) el.classList.toggle('hidden', t !== tab);
+                if (btn) {
+                    if (t === tab) {
+                        btn.className = "flex-1 py-2 text-xs font-semibold rounded-lg flex items-center justify-center gap-2 transition-all bg-slate-800 text-gold-400 shadow";
+                    } else {
+                        btn.className = "flex-1 py-2 text-xs font-semibold rounded-lg flex items-center justify-center gap-2 transition-all text-slate-400 hover:text-slate-200";
+                    }
+                }
+            });
+            lucide.createIcons();
+        }
+
+        async function handleConnectGitHub() {
+            const repo = document.getElementById('github-repo-input').value.trim();
+            const token = document.getElementById('github-token-input').value.trim();
+            const branch = document.getElementById('github-branch-input').value.trim() || 'main';
+            const autoSave = document.getElementById('github-auto-save-check').checked;
+            const autoPull = document.getElementById('github-auto-pull-check').checked;
+
+            if (!repo || !token) {
+                showToast('Please enter both GitHub repository and token.', 'error');
+                return;
+            }
+
+            showToast('Testing GitHub connection...', 'info');
+            try {
+                const info = await window.gbbGitHub.testConnection(repo, token);
+                const parsed = window.gbbGitHub.getParsedRepo(repo);
+
+                window.gbbGitHub.saveConfig({
+                    enabled: true,
+                    repo: parsed.fullName,
+                    token: token,
+                    branch: branch,
+                    autoSave: autoSave,
+                    autoPull: autoPull
+                });
+
+                showToast(`Connected to ${info.fullName}!`, 'success');
+
+                if (electronIpc) {
+                    const remoteUrl = `https://github.com/${parsed.fullName}.git`;
+                    electronIpc.invoke('git:set-remote', remoteUrl).catch(() => {});
+                }
+
+                if (autoPull) {
+                    await window.gbbGitHub.pullFromGitHub(false);
+                } else {
+                    await window.gbbGitHub.pushToGitHub({
+                        version: '2.0.0',
+                        updatedAt: state.updatedAt,
+                        categories: state.categories,
+                        products: state.products,
+                        staffList: state.staffList,
+                        salesHistory: state.salesHistory
+                    }, false);
+                }
+            } catch(err) {
+                showToast('Connection failed: ' + err.message, 'error');
+            }
+        }
+
+        function handleDisconnectGitHub() {
+            if (confirm('Disconnect GitHub sync from this device? Your data on GitHub will NOT be deleted.')) {
+                window.gbbGitHub.saveConfig({ enabled: false, token: '' });
+                document.getElementById('github-token-input').value = '';
+                showToast('GitHub disconnected.', 'info');
+            }
+        }
+
+        function handlePullFromGitHub() {
+            if (!window.gbbGitHub || !window.gbbGitHub.isConfigured()) {
+                showToast('Please connect GitHub first.', 'gold');
+                return;
+            }
+            window.gbbGitHub.pullFromGitHub(false);
+        }
+
+        function handlePushToGitHub() {
+            if (!window.gbbGitHub || !window.gbbGitHub.isConfigured()) {
+                showToast('Please connect GitHub first.', 'gold');
+                return;
+            }
+            saveAllData();
+            window.gbbGitHub.pushToGitHub({
+                version: '2.0.0',
+                updatedAt: state.updatedAt,
+                categories: state.categories,
+                products: state.products,
+                staffList: state.staffList,
+                salesHistory: state.salesHistory
+            }, false);
+        }
+
+        function toggleTokenVisibility(inputId) {
+            const input = document.getElementById(inputId);
+            if (input) {
+                input.type = input.type === 'password' ? 'text' : 'password';
+            }
+        }
+
+        function toggleSqlHelperModal() {
+            const modal = document.getElementById('modal-supabase-sql');
+            if (modal) {
+                modal.classList.toggle('hidden');
+                lucide.createIcons();
+            }
+        }
+
+        function copySupabaseSql() {
+            const code = document.getElementById('supabase-sql-code');
+            if (code) {
+                navigator.clipboard.writeText(code.innerText).then(() => {
+                    const btnText = document.getElementById('copy-sql-btn-text');
+                    if (btnText) btnText.innerText = 'Copied!';
+                    showToast('SQL script copied to clipboard!', 'success');
+                    setTimeout(() => {
+                        if (btnText) btnText.innerText = 'Copy SQL';
+                    }, 2500);
+                }).catch(() => {
+                    showToast('Could not copy automatically. Select and copy the text.', 'info');
+                });
+            }
+        }
+
+        async function handleConnectSupabase() {
+            const url = document.getElementById('supabase-url-input').value.trim();
+            const key = document.getElementById('supabase-key-input').value.trim();
 
             if (!url || !key) {
-                showToast('Please enter both Supabase Project URL and Anon Public Key.', 'error');
-                return;
-            }
-
-            if (!url.startsWith('http://') && !url.startsWith('https://')) {
-                showToast('Supabase URL must start with https://', 'error');
+                showToast('Please enter both Supabase URL and Anon Key.', 'error');
                 return;
             }
 
             localStorage.setItem('gbb_supabase_url', url);
             localStorage.setItem('gbb_supabase_key', key);
-            localStorage.setItem('gbb_supabase_direct_sync', isDirect ? 'true' : 'false');
-            sharedDbDirectSync = isDirect;
+            showToast('Connecting to Supabase...', 'info');
 
-            updateSharedDatabaseStatus('Connecting to Supabase...', null);
+            try {
+                await initializeSharedDatabase();
+                showToast('Supabase Cloud Database connected!', 'success');
+            } catch(err) {
+                showToast('Supabase connection failed: ' + err.message, 'error');
+            }
+        }
+
+        function handleDisconnectSupabase() {
+            if (confirm('Disconnect Supabase Cloud Database?')) {
+                localStorage.removeItem('gbb_supabase_url');
+                localStorage.removeItem('gbb_supabase_key');
+                document.getElementById('supabase-url-input').value = '';
+                document.getElementById('supabase-key-input').value = '';
+                sharedDbClient = null;
+                clearInterval(sharedDbPollTimer);
+                updateSharedDatabaseStatus('Not connected');
+                updateCloudIndicator('disconnected');
+                showToast('Supabase disconnected.', 'info');
+            }
+        }
+
+        async function handleDesktopGitPush() {
+            if (!electronIpc) {
+                showToast('Desktop Git is available in Electron app mode.', 'gold');
+                return;
+            }
+            saveAllData();
+            showToast('Running local Git commit and push...', 'info');
+            try {
+                const res = await electronIpc.invoke('git:commit-and-push', 'Manual save: ' + new Date().toLocaleString());
+                if (res.ok) {
+                    showToast('Local Git commit & push completed successfully!', 'success');
+                } else {
+                    showToast('Git error: ' + (res.error || res.stderr), 'error');
+                }
+            } catch(err) {
+                showToast('Git command failed: ' + err.message, 'error');
+            }
+        }
+
+        function applySharedDatabaseUser(session) {
+            const metadata = session.user.app_metadata || {};
+            const role = ['owner', 'manager', 'cashier'].includes(metadata.role) ? metadata.role : 'cashier';
+            state.currentUser = session.user.email || 'Staff';
+            state.currentRole = role;
+            updateRoleUI();
+        }
+
+        async function initializeSharedDatabase() {
+            const savedUrl = localStorage.getItem('gbb_supabase_url');
+            const savedKey = localStorage.getItem('gbb_supabase_key');
+
+            let url = savedUrl;
+            let anonKey = savedKey;
+
+            if (!url || !anonKey) {
+                if (window.location.protocol !== 'file:') {
+                    try {
+                        const response = await fetch('/api/config', { cache: 'no-store' });
+                        if (response.ok) {
+                            const config = await response.json();
+                            if (config.configured) {
+                                url = config.url;
+                                anonKey = config.anonKey;
+                            }
+                        }
+                    } catch(e) {}
+                }
+            }
+
+            if (!url || !anonKey) {
+                updateSharedDatabaseStatus('Not connected');
+                updateCloudIndicator('disconnected');
+                return;
+            }
 
             try {
                 if (!window.supabase || !window.supabase.createClient) {
-                    throw new Error('Supabase client library not ready.');
+                    throw new Error('Supabase client failed to load. Check your internet connection.');
                 }
-                sharedDbClient = window.supabase.createClient(url, key);
-                
-                await loadSharedDatabaseData(true);
-                startSharedDatabaseRefresh();
-                updateSharedDatabaseStatus('Live Cloud Synced ⚡', true);
-                showToast('Successfully connected! Products and sales are now synced across all devices.', 'success');
-                setTimeout(() => closeModal('modal-shared-database'), 1200);
-            } catch(err) {
-                console.error('Custom cloud connect error:', err);
-                updateSharedDatabaseStatus('Connection failed: ' + err.message, false);
-                showToast('Connection failed: ' + err.message, 'error');
-            }
-        }
 
-        function clearCloudConfig() {
-            localStorage.removeItem('gbb_supabase_url');
-            localStorage.removeItem('gbb_supabase_key');
-            localStorage.removeItem('gbb_supabase_direct_sync');
-            
-            if (sharedDbClient && sharedDbRealtimeChannel) {
-                try { sharedDbClient.removeChannel(sharedDbRealtimeChannel); } catch(e){}
-            }
-            clearInterval(sharedDbPollTimer);
-            sharedDbClient = null;
-            sharedDbSession = null;
-            sharedDbDirectSync = false;
+                sharedDbClient = window.supabase.createClient(url, anonKey);
+                const { data } = await sharedDbClient.auth.getSession().catch(() => ({ data: {} }));
+                sharedDbSession = data ? data.session : null;
 
-            const urlInput = document.getElementById('shared-db-custom-url');
-            const keyInput = document.getElementById('shared-db-custom-key');
-            if (urlInput) urlInput.value = '';
-            if (keyInput) keyInput.value = '';
+                if (sharedDbSession) {
+                    applySharedDatabaseUser(sharedDbSession);
+                }
 
-            updateSharedDatabaseStatus('Offline (Disconnected)', false);
-            showToast('Cloud credentials cleared from this device.', 'gold');
-        }
-
-        async function testCloudConnection() {
-            if (!sharedDbClient) {
-                showToast('Please enter and save Supabase credentials first.', 'error');
-                return;
-            }
-            updateSharedDatabaseStatus('Checking connection...', true);
-            try {
                 await loadSharedDatabaseData(false);
-                showToast('Connection active! Cloud inventory up to date.', 'success');
-                updateSharedDatabaseStatus('Live Cloud Synced ⚡', true);
-            } catch(err) {
-                showToast('Sync check failed: ' + err.message, 'error');
-                updateSharedDatabaseStatus('Sync check failed', false);
+                startSharedDatabaseRefresh();
+                updateSharedDatabaseStatus('Connected');
+                updateCloudIndicator('connected');
+
+                sharedDbClient.auth.onAuthStateChange((_event, session) => {
+                    sharedDbSession = session;
+                    if (session) {
+                        applySharedDatabaseUser(session);
+                    }
+                });
+            } catch(error) {
+                console.warn('Shared database initialization error:', error);
+                updateSharedDatabaseStatus('Database setup incomplete');
+                updateCloudIndicator('error');
             }
         }
 
         async function loadSharedDatabaseData(initializeIfMissing) {
             if (!sharedDbClient) return;
+            try {
+                const { data, error } = await sharedDbClient
+                    .from('gbb_shared_data')
+                    .select('payload')
+                    .eq('id', 1)
+                    .maybeSingle();
 
-            const { data, error } = await sharedDbClient
-                .from('gbb_shared_data')
-                .select('payload')
-                .eq('id', 1)
-                .maybeSingle();
+                if (error) {
+                    console.warn('Supabase select notice:', error);
+                    updateSharedDatabaseStatus(error.message);
+                    return;
+                }
 
-            if (error) throw error;
+                if (data && data.payload && Array.isArray(data.payload.products)) {
+                    applySharedFolderData(data.payload);
+                    updateSharedDatabaseStatus('Synced');
+                    updateCloudIndicator('connected');
+                    return;
+                }
 
-            if (data && data.payload && Array.isArray(data.payload.products)) {
-                applySharedFolderData(data.payload);
-                updateSharedDatabaseStatus('Live Cloud Synced ⚡', true);
-                return;
+                if (!initializeIfMissing) {
+                    updateSharedDatabaseStatus('Table ready');
+                    return;
+                }
+
+                const payload = {
+                    version: '2.0.0',
+                    updatedAt: state.updatedAt,
+                    categories: state.categories,
+                    products: state.products,
+                    staffList: state.staffList,
+                    salesHistory: state.salesHistory
+                };
+                const { error: insertError } = await sharedDbClient
+                    .from('gbb_shared_data')
+                    .upsert({ id: 1, payload, updated_at: payload.updatedAt });
+                if (insertError) throw insertError;
+
+                updateSharedDatabaseStatus('Synced');
+                updateCloudIndicator('connected');
+            } catch(e) {
+                console.warn('loadSharedDatabaseData error:', e);
+                updateSharedDatabaseStatus('Could not load shared data');
+                updateCloudIndicator('error');
             }
-
-            if (!initializeIfMissing) {
-                updateSharedDatabaseStatus('No cloud data yet (initialize with Save)', true);
-                return;
-            }
-
-            // Initialize database with local data if table is currently empty
-            const payload = {
-                version: '2.0.0',
-                updatedAt: state.updatedAt || new Date().toISOString(),
-                categories: state.categories,
-                products: state.products,
-                staffList: state.staffList,
-                salesHistory: state.salesHistory
-            };
-            
-            const { error: insertError } = await sharedDbClient
-                .from('gbb_shared_data')
-                .insert({ id: 1, payload, updated_at: payload.updatedAt });
-            if (insertError && insertError.code !== '23505') throw insertError;
-
-            updateSharedDatabaseStatus('Cloud Initialized & Synced ⚡', true);
         }
 
         function startSharedDatabaseRefresh() {
             clearInterval(sharedDbPollTimer);
-
-            // 1. Real-time WebSocket listener (instant updates in milliseconds across devices)
-            try {
-                if (sharedDbRealtimeChannel && sharedDbClient) {
-                    try { sharedDbClient.removeChannel(sharedDbRealtimeChannel); } catch(e){}
-                }
-                if (sharedDbClient) {
-                    sharedDbRealtimeChannel = sharedDbClient
-                        .channel('public:gbb_shared_data')
-                        .on('postgres_changes', { event: '*', schema: 'public', table: 'gbb_shared_data' }, (payload) => {
-                            if (payload.new && payload.new.payload && payload.new.payload.updatedAt > state.updatedAt) {
-                                applySharedFolderData(payload.new.payload);
-                                updateSharedDatabaseStatus('Live Synced (Just now) ⚡', true);
-                                showToast('⚡ Real-time update received from another device!', 'success');
-                            }
-                        })
-                        .subscribe();
-                }
-            } catch(e) {
-                console.warn('Realtime channel subscription error:', e);
-            }
-
-            // 2. Periodic polling fallback (every 4 seconds) to guarantee consistency
             sharedDbPollTimer = setInterval(async () => {
-                if ((!sharedDbSession && !sharedDbDirectSync) || sharedDbWritePending || !sharedDbClient) return;
+                if (!sharedDbClient || sharedDbWritePending) return;
                 try {
                     const { data, error } = await sharedDbClient
                         .from('gbb_shared_data')
                         .select('payload')
                         .eq('id', 1)
                         .maybeSingle();
-                    if (error) throw error;
-                    if (data && data.payload && Array.isArray(data.payload.products) && data.payload.updatedAt > state.updatedAt) {
-                        applySharedFolderData(data.payload);
-                        updateSharedDatabaseStatus('Live Cloud Synced ⚡', true);
+                    if (!error && data && data.payload && Array.isArray(data.payload.products)) {
+                        if (data.payload.updatedAt > state.updatedAt) {
+                            applySharedFolderData(data.payload);
+                            updateSharedDatabaseStatus('Updated from shared database');
+                        }
                     }
                 } catch(error) {
-                    console.error('Shared database refresh error:', error);
+                    console.warn('Shared database refresh notice:', error);
                 }
-            }, 4000);
+            }, 10000);
         }
 
         async function connectSharedDatabase(event) {
             event.preventDefault();
             if (!sharedDbClient) {
-                showToast('Please configure Supabase Project URL and Key first.', 'error');
+                updateSharedDatabaseStatus('Connect with URL and Anon key above');
+                showToast('Enter your Supabase URL and Anon key first.', 'gold');
                 return;
             }
 
             const email = document.getElementById('shared-db-email').value.trim();
             const password = document.getElementById('shared-db-password').value;
-            updateSharedDatabaseStatus('Signing in...', null);
+            updateSharedDatabaseStatus('Signing in...');
             const { data, error } = await sharedDbClient.auth.signInWithPassword({ email, password });
             if (error) {
-                updateSharedDatabaseStatus('Sign-in failed', false);
+                updateSharedDatabaseStatus('Sign-in failed');
                 showToast('Shared database sign-in failed: ' + error.message, 'error');
                 return;
             }
@@ -1842,11 +2432,11 @@
             try {
                 await loadSharedDatabaseData(true);
                 startSharedDatabaseRefresh();
-                closeModal('modal-shared-database');
-                showToast('Shared products and sales loaded.', 'success');
+                closeModal('modal-sync-center');
+                showToast('Signed in. Shared products and sales loaded.', 'success');
             } catch(loadError) {
                 console.error('Shared database load error:', loadError);
-                updateSharedDatabaseStatus('Access denied or database setup incomplete', false);
+                updateSharedDatabaseStatus('Access denied or database setup incomplete');
                 showToast('Could not load shared data: ' + loadError.message, 'error');
             }
         }
@@ -1859,15 +2449,11 @@
                 return;
             }
             sharedDbSession = null;
-            if (!sharedDbDirectSync) {
-                clearInterval(sharedDbPollTimer);
-                clearTimeout(sharedDbSaveTimer);
-                if (sharedDbRealtimeChannel) {
-                    try { sharedDbClient.removeChannel(sharedDbRealtimeChannel); } catch(e){}
-                }
-            }
-            updateSharedDatabaseStatus('Signed out', false);
-            showToast('Signed out of staff account.', 'info');
+            clearInterval(sharedDbPollTimer);
+            clearTimeout(sharedDbSaveTimer);
+            updateSharedDatabaseStatus('Signed out');
+            updateCloudIndicator('disconnected');
+            showToast('Signed out of Supabase auth session.', 'info');
         }
 
         function applySharedFolderData(data) {
@@ -1934,257 +2520,12 @@
         }
 
         function handleFolderSyncClick() {
-            if (githubConfig && githubConfig.repo && githubConfig.token) {
-                openGithubSyncModal();
-            } else if (nodeFs) {
+            if (nodeFs) {
                 showToast("Electron/Node mode: files in your folder are automatically updated on every change!", "success");
             } else if (dirHandle) {
                 showToast("Folder sync is active! Changes are saved automatically to data.js & data.json in your folder.", "success");
             } else {
-                openGithubSyncModal();
-            }
-        }
-
-        // ==============================================================
-        // DIRECT GITHUB REPOSITORY SYNC & DEPLOYMENT ENGINE
-        // ==============================================================
-        function openGithubSyncModal() {
-            document.getElementById('modal-github-sync').classList.remove('hidden');
-            const repoInput = document.getElementById('github-repo-input');
-            const tokenInput = document.getElementById('github-token-input');
-            const branchInput = document.getElementById('github-branch-input');
-            const toggle = document.getElementById('github-auto-sync-toggle');
-
-            if (repoInput) repoInput.value = githubConfig.repo || '';
-            if (tokenInput) tokenInput.value = githubConfig.token || '';
-            if (branchInput) branchInput.value = githubConfig.branch || 'main';
-            if (toggle) toggle.checked = githubConfig.autoSync;
-
-            updateGithubStatusUI();
-            if (window.lucide) lucide.createIcons();
-        }
-
-        function updateGithubStatusUI() {
-            const badge = document.getElementById('github-sync-badge');
-            if (!badge) return;
-            if (githubConfig.repo && githubConfig.token) {
-                badge.className = "text-[10px] bg-sky-500/20 text-sky-300 px-2 py-0.5 rounded-full border border-sky-500/30 font-mono";
-                badge.innerText = "Linked: " + githubConfig.repo;
-            } else {
-                badge.className = "text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded-full border border-slate-700 font-mono";
-                badge.innerText = "Not Linked";
-            }
-        }
-
-        function saveGithubConfig() {
-            let repo = document.getElementById('github-repo-input').value.trim();
-            repo = repo.replace('https://github.com/', '').replace(/\.git$/, '').trim();
-            const token = document.getElementById('github-token-input').value.trim();
-            const branch = document.getElementById('github-branch-input').value.trim() || 'main';
-            const autoSync = document.getElementById('github-auto-sync-toggle').checked;
-
-            if (!repo || !token) {
-                showToast('Please enter both your GitHub repository (owner/repo) and Personal Access Token.', 'error');
-                return;
-            }
-
-            githubConfig = { repo, token, branch, autoSync };
-            localStorage.setItem('gbb_github_repo', repo);
-            localStorage.setItem('gbb_github_token', token);
-            localStorage.setItem('gbb_github_branch', branch);
-            localStorage.setItem('gbb_github_auto_sync', autoSync ? 'true' : 'false');
-
-            updateGithubStatusUI();
-            updateSyncIndicator('github-synced');
-            showToast('✅ GitHub configuration saved successfully!', 'success');
-        }
-
-        function clearGithubConfig() {
-            githubConfig = { repo: '', token: '', branch: 'main', autoSync: false };
-            localStorage.removeItem('gbb_github_repo');
-            localStorage.removeItem('gbb_github_token');
-            localStorage.removeItem('gbb_github_branch');
-            localStorage.removeItem('gbb_github_auto_sync');
-
-            document.getElementById('github-repo-input').value = '';
-            document.getElementById('github-token-input').value = '';
-            document.getElementById('github-branch-input').value = 'main';
-
-            updateGithubStatusUI();
-            updateSyncIndicator('browser-only');
-            showToast('GitHub configuration cleared.', 'info');
-        }
-
-        async function getGithubFileSha(filePath) {
-            if (!githubConfig.repo || !githubConfig.token) return null;
-            try {
-                const res = await fetch(`https://api.github.com/repos/${githubConfig.repo}/contents/${filePath}?ref=${githubConfig.branch || 'main'}`, {
-                    headers: {
-                        'Authorization': `Bearer ${githubConfig.token}`,
-                        'Accept': 'application/vnd.github+json'
-                    }
-                });
-                if (res.ok) {
-                    const data = await res.json();
-                    return data.sha;
-                }
-            } catch(e) {}
-            return null;
-        }
-
-        function stringToBase64(str) {
-            const bytes = new TextEncoder().encode(str);
-            let binary = '';
-            const len = bytes.byteLength;
-            for (let i = 0; i < len; i++) {
-                binary += String.fromCharCode(bytes[i]);
-            }
-            return btoa(binary);
-        }
-
-        async function commitFileToGithub(filePath, contentStr, commitMessage) {
-            if (!githubConfig.repo || !githubConfig.token) {
-                throw new Error('GitHub is not configured. Please enter your repository and token.');
-            }
-            const sha = await getGithubFileSha(filePath);
-            const base64 = stringToBase64(contentStr);
-
-            const body = {
-                message: commitMessage || `Update ${filePath} from POS`,
-                content: base64,
-                branch: githubConfig.branch || 'main'
-            };
-            if (sha) body.sha = sha;
-
-            const res = await fetch(`https://api.github.com/repos/${githubConfig.repo}/contents/${filePath}`, {
-                method: 'PUT',
-                headers: {
-                    'Authorization': `Bearer ${githubConfig.token}`,
-                    'Accept': 'application/vnd.github+json',
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(body)
-            });
-
-            if (!res.ok) {
-                const err = await res.json();
-                throw new Error(`${filePath}: ${err.message || res.statusText}`);
-            }
-            return await res.json();
-        }
-
-        async function saveInventoryToGithub(showToastFlag = true) {
-            if (!githubConfig.repo || !githubConfig.token) {
-                if (showToastFlag) showToast('Please enter your GitHub repository & token first.', 'error');
-                openGithubSyncModal();
-                return;
-            }
-
-            if (githubSyncing) return;
-            githubSyncing = true;
-            updateSyncIndicator('github-saving');
-            if (showToastFlag) showToast('Saving data directly to GitHub...', 'info');
-
-            state.updatedAt = new Date().toISOString();
-            const exportPayload = {
-                version: "2.0.0",
-                updatedAt: state.updatedAt,
-                categories: state.categories,
-                products: state.products,
-                staffList: state.staffList,
-                salesHistory: state.salesHistory
-            };
-
-            try {
-                const jsonContent = JSON.stringify(exportPayload, null, 2) + '\n';
-                const jsContent = 'window.GBB_DATA = ' + JSON.stringify(exportPayload, null, 2) + ';\n';
-
-                await commitFileToGithub('data.json', jsonContent, `Update boutique inventory [skip ci] (${state.products.length} products)`);
-                await commitFileToGithub('data.js', jsContent, `Update boutique data.js [skip ci]`);
-
-                updateSyncIndicator('github-synced');
-                if (showToastFlag) showToast('✅ Successfully saved directly to GitHub!', 'success');
-            } catch(err) {
-                console.error('GitHub save error:', err);
-                updateSyncIndicator('github-error');
-                if (showToastFlag) showToast('GitHub save failed: ' + err.message, 'error');
-            } finally {
-                githubSyncing = false;
-            }
-        }
-
-        async function pullInventoryFromGithub() {
-            if (!githubConfig.repo) {
-                showToast('Please specify a GitHub repository.', 'error');
-                return;
-            }
-            showToast('Fetching latest data from GitHub...', 'info');
-            try {
-                const headers = githubConfig.token ? { 'Authorization': `Bearer ${githubConfig.token}` } : {};
-                const url = `https://raw.githubusercontent.com/${githubConfig.repo}/${githubConfig.branch || 'main'}/data.json?t=${Date.now()}`;
-                const res = await fetch(url, { headers, cache: 'no-store' });
-                if (!res.ok) throw new Error('Could not fetch data.json from GitHub (' + res.status + ')');
-                const data = await res.json();
-                if (data && Array.isArray(data.products)) {
-                    applySharedFolderData(data);
-                    showToast(`✅ Loaded ${data.products.length} products from GitHub!`, 'success');
-                    closeModal('modal-github-sync');
-                } else {
-                    throw new Error('Invalid data.json structure in GitHub repo.');
-                }
-            } catch(err) {
-                console.error('GitHub pull error:', err);
-                showToast('Failed to pull from GitHub: ' + err.message, 'error');
-            }
-        }
-
-        async function deployAppCodeToGithub() {
-            if (!githubConfig.repo || !githubConfig.token) {
-                showToast('Please enter your GitHub repository & token first.', 'error');
-                return;
-            }
-
-            showToast('Deploying application code to GitHub...', 'info');
-            try {
-                let htmlContent = '';
-                if (nodeFs && nodeBasePath) {
-                    htmlContent = nodeFs.readFileSync(nodeBasePath + 'index.html', 'utf8');
-                } else {
-                    const res = await fetch(window.location.href);
-                    if (res.ok) htmlContent = await res.text();
-                }
-
-                if (htmlContent) {
-                    await commitFileToGithub('index.html', htmlContent, 'Deploy latest POS updates with enlarged QR code & multi-device sync');
-                }
-
-                const vercelJsonContent = JSON.stringify({
-                    "version": 2,
-                    "rewrites": [{ "source": "/api/config", "destination": "/api/config.js" }],
-                    "headers": [{ "source": "/(.*)", "headers": [{ "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }] }]
-                }, null, 2) + '\n';
-                await commitFileToGithub('vercel.json', vercelJsonContent, 'Update Vercel cache and serverless routing');
-
-                const apiConfigContent = `module.exports = (_request, response) => {
-  response.setHeader('Cache-Control', 'no-store');
-  const url = process.env.SUPABASE_URL;
-  const anonKey = process.env.SUPABASE_ANON_KEY;
-  if (!url || !anonKey) {
-    response.status(200).json({ configured: false });
-    return;
-  }
-  response.status(200).json({ configured: true, url, anonKey });
-};\n`;
-                await commitFileToGithub('api/config.js', apiConfigContent, 'Add Vercel Serverless Function for Supabase');
-
-                // Also save current inventory
-                await saveInventoryToGithub(false);
-
-                showToast('🚀 Successfully deployed to GitHub! Vercel is updating now (~15s)...', 'success');
-                setTimeout(() => closeModal('modal-github-sync'), 1500);
-            } catch(err) {
-                console.error('Deploy error:', err);
-                showToast('Deploy failed: ' + err.message, 'error');
+                connectFolder();
             }
         }
 
@@ -2474,7 +2815,24 @@
             renderSalesHistory();
             updateOwnerStats();
             updateRoleUI();
-            updateSyncIndicator(githubConfig && githubConfig.repo && githubConfig.token ? 'github-synced' : sharedFolderError ? 'shared-error' : sharedFolderPath ? 'saved-shared' : nodeFs ? 'saved-node' : 'browser-only');
+            updateSyncIndicator(sharedFolderError ? 'shared-error' : sharedFolderPath ? 'saved-shared' : nodeFs ? 'saved-node' : 'browser-only');
+            
+            // Initialize GitHub Cloud Auto-Sync
+            window.gbbGitHub = new GitHubSyncService();
+            window.gbbGitHub.updateUI();
+            if (window.gbbGitHub.isConfigured() && window.gbbGitHub.config.autoPull) {
+                window.gbbGitHub.pullFromGitHub(true);
+            }
+
+            // Initialize Desktop Git if in Electron
+            if (electronIpc) {
+                electronIpc.invoke('git:status').then(res => {
+                    if (res && res.remote) {
+                        window.gbbLocalGitEnabled = true;
+                    }
+                }).catch(() => {});
+            }
+
             initializeSharedDatabase();
             focusScannerInput();
 
@@ -2900,6 +3258,7 @@
         }
 
         function printReceipt(sale) {
+            applyPrintStyles('receipt');
             const area = document.getElementById('printable-area');
             const subtotalMad = sale.subtotal.toFixed(2);
             const discountMad = (sale.subtotal * (sale.discountPct / 100)).toFixed(2);
@@ -3033,8 +3392,8 @@
                         <div style="font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px;">
                             Scan for Boutique Instagram
                         </div>
-                        <div id="receipt-qrcode" class="mx-auto my-4 w-36 h-36 bg-white rounded-md shadow-md"></div>
-                        <div style="font-size: 14px; font-weight: 800; color: #000; margin-top: 2px;">
+                        <div id="receipt-qrcode" style="display: inline-block; margin: 4px auto;"></div>
+                        <div style="font-size: 11.5px; font-weight: 800; color: #000; margin-top: 2px;">
                             ${BOUTIQUE_INFO.instagramHandle}
                         </div>
                         <div style="margin-top: 6px; display: flex; justify-content: center;">
@@ -3075,8 +3434,8 @@
             try {
                 new QRCode(document.getElementById("receipt-qrcode"), {
                     text: BOUTIQUE_INFO.instagram,
-                    width: 144,
-                    height: 144,
+                    width: 76,
+                    height: 76,
                     correctLevel: QRCode.CorrectLevel.M
                 });
             } catch(e) {
@@ -3102,122 +3461,269 @@
         }
 
         // ==============================================================
-        // BARCODE THERMAL TAG DESIGN (WITH INSTAGRAM & PHONE ON THE BARCODE TAG!)
+        // HIGH-PRECISION THERMAL BARCODE LABEL PRINTING ENGINE
+        // Optimized specifically for 25mm x 15mm Jewelry & Retail Tag rolls
         // ==============================================================
-        function printTag(productId) {
-            const p = state.products.find(item => item.id === productId);
-            if (!p) return;
+        let currentLabelPreset = localStorage.getItem('gbb_label_preset') || '25x15';
 
-            const area = document.getElementById('printable-area');
-            
-            area.innerHTML = `
-                <div style="
-                    width: 50mm;
-                    min-height: 32mm;
-                    max-height: 36mm;
+        function setLabelPreset(preset) {
+            currentLabelPreset = preset;
+            localStorage.setItem('gbb_label_preset', preset);
+            ['25x15', '30x20', '40x30', '50x30'].forEach(p => {
+                const btn = document.getElementById(`btn-label-${p}`);
+                if (btn) {
+                    if (p === preset) {
+                        btn.className = "py-1.5 px-2 rounded-lg text-xs font-semibold border transition-all text-center bg-gold-500/20 border-gold-500 text-gold-300 shadow";
+                    } else {
+                        btn.className = "py-1.5 px-2 rounded-lg text-xs font-semibold border border-slate-800 hover:border-slate-700 text-slate-400 hover:text-slate-200 transition-all text-center";
+                    }
+                }
+            });
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function getSafeBarcodeValue(str) {
+            if (!str) return "000000";
+            const clean = String(str).replace(/[^\x20-\x7E]/g, '').trim();
+            return clean || "GBB-TAG";
+        }
+
+        function applyPrintStyles(preset) {
+            let style = document.getElementById('barcode-print-override');
+            if (!style) {
+                style = document.createElement('style');
+                style.id = 'barcode-print-override';
+                document.head.appendChild(style);
+            }
+
+            if (preset === 'receipt') {
+                style.innerHTML = `
+                    @media print {
+                        @page { size: 80mm auto; margin: 0mm; }
+                        html, body { width: 80mm !important; margin: 0 !important; padding: 0 !important; background: #fff !important; }
+                        #printable-area { width: 78mm !important; margin: 0 auto !important; padding: 0 !important; }
+                    }
+                `;
+                return;
+            }
+
+            let w = 25, h = 15;
+            if (preset === '30x20') { w = 30; h = 20; }
+            else if (preset === '40x30') { w = 40; h = 30; }
+            else if (preset === '50x30') { w = 50; h = 30; }
+
+            style.innerHTML = `
+                @media print {
+                    @page {
+                        size: ${w}mm ${h}mm !important;
+                        margin: 0mm !important;
+                    }
+                    html, body {
+                        width: ${w}mm !important;
+                        height: ${h}mm !important;
+                        margin: 0 !important;
+                        padding: 0 !important;
+                        background: #ffffff !important;
+                        -webkit-print-color-adjust: exact !important;
+                        print-color-adjust: exact !important;
+                    }
+                    #printable-area {
+                        width: ${w}mm !important;
+                        margin: 0 !important;
+                        padding: 0 !important;
+                    }
+                    .barcode-tag-card {
+                        width: ${w}mm !important;
+                        height: ${h}mm !important;
+                        max-width: ${w}mm !important;
+                        max-height: ${h}mm !important;
+                        overflow: hidden !important;
+                        page-break-after: always !important;
+                        break-after: page !important;
+                        box-sizing: border-box !important;
+                        background: #ffffff !important;
+                        color: #000000 !important;
+                    }
+                    svg, svg * {
+                        shape-rendering: crispEdges !important;
+                    }
+                }
+            `;
+        }
+
+        function generateTagHtml(p, index, preset) {
+            const svgId = `tagBarcode-${index}`;
+            if (preset === '25x15') {
+                return `
+                    <div class="barcode-tag-card" style="
+                        width: 25mm;
+                        height: 15mm;
+                        max-width: 25mm;
+                        max-height: 15mm;
+                        margin: 0 auto;
+                        padding: 0.3mm 0.8mm 0.2mm 0.8mm;
+                        box-sizing: border-box;
+                        font-family: 'Plus Jakarta Sans', Arial, sans-serif;
+                        background: #ffffff;
+                        color: #000000;
+                        display: flex;
+                        flex-direction: column;
+                        justify-content: space-between;
+                        align-items: center;
+                        overflow: hidden;
+                        page-break-after: always;
+                        break-after: page;
+                    ">
+                        <!-- Top Line: Truncated Title & Price -->
+                        <div style="width: 100%; display: flex; justify-content: space-between; align-items: baseline; line-height: 1; margin: 0; padding: 0;">
+                            <span style="font-size: 5pt; font-weight: 700; max-width: 14mm; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #000000; letter-spacing: -0.1px;">
+                                ${escapeHtml(p.title)}
+                            </span>
+                            <span style="font-size: 6pt; font-weight: 900; color: #000000; white-space: nowrap; letter-spacing: -0.2px; font-family: 'JetBrains Mono', monospace;">
+                                ${p.price.toFixed(0)} MAD
+                            </span>
+                        </div>
+
+                        <!-- Middle: High-Contrast Tall Barcode SVG -->
+                        <div style="width: 100%; height: 9.6mm; display: flex; align-items: center; justify-content: center; overflow: hidden; margin: 0; padding: 0 0.5mm; box-sizing: border-box;">
+                            <svg id="${svgId}" style="width: 100%; max-width: 23mm; height: 9.6mm; display: block; shape-rendering: crispEdges; margin: 0 auto;"></svg>
+                        </div>
+
+                        <!-- Bottom Line: Product SKU / Code in crisp monospace font -->
+                        <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; line-height: 1; margin: 0; padding: 0;">
+                            <span style="font-family: 'JetBrains Mono', monospace; font-size: 4.8pt; font-weight: 700; letter-spacing: 0.3px; color: #000000;">
+                                ${escapeHtml(p.id)}
+                            </span>
+                            <span style="font-size: 4pt; font-weight: 800; text-transform: uppercase; color: #333333; letter-spacing: 0.2px;">
+                                ${escapeHtml(BOUTIQUE_INFO.name)}
+                            </span>
+                        </div>
+                    </div>
+                `;
+            }
+
+            let w = 50, h = 30;
+            if (preset === '30x20') { w = 30; h = 20; }
+            else if (preset === '40x30') { w = 40; h = 30; }
+
+            return `
+                <div class="barcode-tag-card" style="
+                    width: ${w}mm;
+                    height: ${h}mm;
+                    max-width: ${w}mm;
+                    max-height: ${h}mm;
                     margin: 0 auto;
-                    padding: 1mm 1.5mm;
+                    padding: 0.8mm 1.5mm;
                     box-sizing: border-box;
-                    font-family: 'Plus Jakarta Sans', Arial, Helvetica, sans-serif;
+                    font-family: 'Plus Jakarta Sans', Arial, sans-serif;
                     background: #ffffff;
                     color: #000000;
                     text-align: center;
                     display: flex;
                     flex-direction: column;
-                    align-items: center;
                     justify-content: space-between;
+                    align-items: center;
+                    overflow: hidden;
                     page-break-after: always;
+                    break-after: page;
                 ">
-                    <!-- Brand Top Header -->
-                    <div style="font-size: 4.8pt; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: #111;">
-                        ${BOUTIQUE_INFO.name} BOUTIQUE
+                    <div style="font-size: 5pt; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: #111;">
+                        ${escapeHtml(BOUTIQUE_INFO.name)} BOUTIQUE
                     </div>
-
-                    <!-- 1. SHORTER BARCODE AT THE TOP (CENTERED) -->
-                    <div style="width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 auto;">
-                        <svg id="tagBarcode" style="max-width: 44mm; height: 12mm; display: block; margin: 0 auto;"></svg>
+                    <div style="width: 100%; display: flex; justify-content: center; align-items: center;">
+                        <svg id="${svgId}" style="width: 100%; max-width: ${w - 6}mm; height: ${h * 0.45}mm; display: block; shape-rendering: crispEdges; margin: 0 auto;"></svg>
                     </div>
-
-                    <!-- 2. BIGGER PROMINENT PRICE -->
-                    <div style="
-                        font-size: 14pt;
-                        font-weight: 900;
-                        color: #000000;
-                        letter-spacing: -0.5px;
-                        margin: 0.5px 0;
-                        line-height: 1;
-                    ">
+                    <div style="font-size: 11pt; font-weight: 900; color: #000; line-height: 1; letter-spacing: -0.5px;">
                         ${p.price.toFixed(2)} MAD
                     </div>
-
-                    <!-- 3. PRODUCT NAME & SKU -->
-                    <div style="
-                        font-size: 6.5pt;
-                        font-weight: 700;
-                        line-height: 1.15;
-                        max-width: 48mm;
-                        white-space: nowrap;
-                        overflow: hidden;
-                        text-overflow: ellipsis;
-                    ">
-                        ${p.title}
+                    <div style="font-size: 6pt; font-weight: 700; max-width: ${w - 4}mm; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                        ${escapeHtml(p.title)}
                     </div>
-
                     <div style="font-size: 4.8pt; font-family: monospace; font-weight: 600; color: #333;">
-                        ${p.id} • ${p.category}
-                    </div>
-
-                    <!-- INSTAGRAM QR & CONTACT ON THE BARCODE TAG -->
-                    <div style="display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 1mm; padding-top: 1mm; border-top: 0.5px solid #e2e8f0; width: 100%;">
-                        <div id="tagInstagramQr" style="width: 14mm; height: 14mm; display: inline-block;"></div>
-                        <div style="text-align: left; line-height: 1.25;">
-                            <div style="font-size: 5pt; font-weight: 800; color: #000; text-transform: uppercase;">Scan for Instagram</div>
-                            <div style="font-size: 4.8pt; font-weight: 700; color: #111;">${BOUTIQUE_INFO.instagramHandle}</div>
-                            <div style="font-size: 4.5pt; font-family: monospace; font-weight: 600; color: #333;">Tel: ${BOUTIQUE_INFO.phone}</div>
-                        </div>
+                        ${escapeHtml(p.id)}
                     </div>
                 </div>
             `;
+        }
 
-            JsBarcode("#tagBarcode", p.id, { 
-                format: "CODE128", 
-                width: 1.2,
-                height: 26, 
-                displayValue: true,
-                fontSize: 9,
-                textMargin: 1.5,
-                margin: 3 
-            });
+        function renderBarcodeSvg(svgSelector, barcodeValue, preset) {
+            const safeCode = getSafeBarcodeValue(barcodeValue);
+            let barWidth = 1;
+            let barHeight = 44;
+
+            if (preset === '25x15') {
+                barWidth = 1; // Pure 1-unit width, razor-sharp on 203/300 DPI thermal rolls
+                barHeight = 44;
+            } else if (preset === '30x20') {
+                barWidth = 1.1;
+                barHeight = 50;
+            } else {
+                barWidth = 1.2;
+                barHeight = 55;
+            }
 
             try {
-                new QRCode(document.getElementById("tagInstagramQr"), {
-                    text: BOUTIQUE_INFO.instagram,
-                    width: 52,
-                    height: 52,
-                    correctLevel: QRCode.CorrectLevel.M
+                JsBarcode(svgSelector, safeCode, {
+                    format: "CODE128",
+                    width: barWidth,
+                    height: barHeight,
+                    displayValue: false, // Pure bars in SVG, text in HTML
+                    margin: 0,
+                    background: "#ffffff",
+                    lineColor: "#000000"
                 });
-            } catch(e) {
-                console.warn("Tag QR error", e);
+
+                const svgEl = document.querySelector(svgSelector);
+                if (svgEl) {
+                    svgEl.setAttribute('shape-rendering', 'crispEdges');
+                    const rects = svgEl.querySelectorAll('rect');
+                    rects.forEach(r => r.setAttribute('shape-rendering', 'crispEdges'));
+                }
+            } catch(err) {
+                console.warn('JsBarcode rendering error:', err);
             }
+        }
+
+        function printTag(productId) {
+            const p = state.products.find(item => item.id === productId);
+            if (!p) return;
+
+            const preset = currentLabelPreset || '25x15';
+            applyPrintStyles(preset);
+
+            const area = document.getElementById('printable-area');
+            area.innerHTML = generateTagHtml(p, 'single', preset);
+
+            renderBarcodeSvg('#tagBarcode-single', p.id, preset);
 
             setTimeout(() => {
                 window.print();
                 focusScannerInput();
-            }, 250);
+            }, 120);
         }
 
         // ==============================================================
         // BATCH BARCODE PRINTING
         // ==============================================================
         function openBatchBarcodeModal() {
+            setLabelPreset(currentLabelPreset || '25x15');
             const container = document.getElementById('batch-barcode-items');
             container.innerHTML = state.products.map(p => `
                 <label class="flex items-center justify-between p-2 rounded-lg hover:bg-slate-900 cursor-pointer border border-slate-800/80">
                     <div class="flex items-center gap-2">
                         <input type="checkbox" value="${p.id}" class="batch-barcode-check rounded bg-slate-950 border-slate-700 text-gold-500">
                         <div>
-                            <div class="text-xs font-semibold text-slate-200">${p.title}</div>
-                            <div class="text-[10px] text-slate-500 font-mono">${p.id} • ${p.price.toFixed(2)} MAD</div>
+                            <div class="text-xs font-semibold text-slate-200">${escapeHtml(p.title)}</div>
+                            <div class="text-[10px] text-slate-500 font-mono">${escapeHtml(p.id)} • ${p.price.toFixed(2)} MAD</div>
                         </div>
                     </div>
                     <div class="flex items-center gap-1">
@@ -3228,6 +3734,7 @@
             `).join('');
 
             document.getElementById('modal-batch-barcode').classList.remove('hidden');
+            lucide.createIcons();
         }
 
         function selectAllBatchBarcodes(select) {
@@ -3253,98 +3760,20 @@
 
             closeModal('modal-batch-barcode');
 
+            const preset = currentLabelPreset || '25x15';
+            applyPrintStyles(preset);
+
             const area = document.getElementById('printable-area');
-            area.innerHTML = selected.map((p, index) => `
-                <div style="
-                    width: 50mm;
-                    min-height: 32mm;
-                    max-height: 36mm;
-                    margin: 0 auto;
-                    padding: 1mm 1.5mm;
-                    box-sizing: border-box;
-                    font-family: 'Plus Jakarta Sans', Arial, Helvetica, sans-serif;
-                    background: #ffffff;
-                    color: #000000;
-                    text-align: center;
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    justify-content: space-between;
-                    page-break-after: always;
-                ">
-                    <div style="font-size: 4.8pt; font-weight: 800; text-transform: uppercase; color: #111;">
-                        ${BOUTIQUE_INFO.name} BOUTIQUE
-                    </div>
-
-                    <div style="width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 auto;">
-                        <svg id="batchTagBarcode-${index}" style="max-width: 44mm; height: 12mm; display: block; margin: 0 auto;"></svg>
-                    </div>
-
-                    <div style="
-                        font-size: 14pt;
-                        font-weight: 900;
-                        color: #000;
-                        margin: 0.5px 0;
-                        line-height: 1;
-                        letter-spacing: -0.5px;
-                    ">
-                        ${p.price.toFixed(2)} MAD
-                    </div>
-
-                    <div style="
-                        font-size: 6.5pt;
-                        font-weight: 700;
-                        max-width: 48mm;
-                        white-space: nowrap;
-                        overflow: hidden;
-                        text-overflow: ellipsis;
-                    ">
-                        ${p.title}
-                    </div>
-
-                    <div style="font-size: 4.8pt; font-family: monospace; font-weight: 600; color: #333;">
-                        ${p.id}
-                    </div>
-
-                    <!-- INSTAGRAM QR & CONTACT ON THE BARCODE TAG -->
-                    <div style="display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 1mm; padding-top: 1mm; border-top: 0.5px solid #e2e8f0; width: 100%;">
-                        <div id="batchTagInstagramQr-${index}" style="width: 14mm; height: 14mm; display: inline-block;"></div>
-                        <div style="text-align: left; line-height: 1.25;">
-                            <div style="font-size: 5pt; font-weight: 800; color: #000; text-transform: uppercase;">Scan for Instagram</div>
-                            <div style="font-size: 4.8pt; font-weight: 700; color: #111;">${BOUTIQUE_INFO.instagramHandle}</div>
-                            <div style="font-size: 4.5pt; font-family: monospace; font-weight: 600; color: #333;">Tel: ${BOUTIQUE_INFO.phone}</div>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
+            area.innerHTML = selected.map((p, index) => generateTagHtml(p, index, preset)).join('');
 
             selected.forEach((p, index) => {
-                JsBarcode(`#batchTagBarcode-${index}`, p.id, {
-                    format: "CODE128",
-                    width: 1.2,
-                    height: 26,
-                    displayValue: true,
-                    fontSize: 9,
-                    textMargin: 1.5,
-                    margin: 3
-                });
-
-                try {
-                    new QRCode(document.getElementById(`batchTagInstagramQr-${index}`), {
-                        text: BOUTIQUE_INFO.instagram,
-                        width: 52,
-                        height: 52,
-                        correctLevel: QRCode.CorrectLevel.M
-                    });
-                } catch(e) {
-                    console.warn("Batch Tag QR error", e);
-                }
+                renderBarcodeSvg(`#tagBarcode-${index}`, p.id, preset);
             });
 
             setTimeout(() => {
                 window.print();
                 focusScannerInput();
-            }, 350);
+            }, 200);
         }
 
         // ==============================================================

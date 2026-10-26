@@ -1,49 +1,56 @@
-# Automatic Multi-Device Sync Guide (Supabase)
+# Golden Blossom Boutique - Cloud Sync & GitHub Guide
 
-With Cloud Sync enabled, any change you make (adding products, updating stock, changing prices, ringing up sales) **automatically synchronizes in real-time across all your PCs, iPads, tablets, and phones**.
-
----
-
-## ⚡ Quick 2-Minute Setup (100% Free)
-
-### 1. Create a Free Supabase Project
-1. Go to [supabase.com](https://supabase.com) and create a free account.
-2. Click **New Project**, choose a project name (e.g., `Golden Blossom POS`), set a database password, and create it.
-
-### 2. Run the Database Schema
-1. In the Supabase dashboard sidebar, click **SQL Editor**.
-2. Click **New query**, paste the entire contents of [`supabase-schema.sql`](supabase-schema.sql), and click **Run**.
-3. This creates the `gbb_shared_data` table, enables real-time broadcast, and configures sync permissions.
-
-### 3. Copy Your Credentials
-In your Supabase project, go to **Project Settings > API**:
-- **Project URL** (e.g. `https://your-id.supabase.co`)
-- **anon / public key** (starts with `eyJ...`)
+This POS system supports two easy ways to keep your boutique data synchronized across multiple devices and backed up safely.
 
 ---
 
-## 📱 Connecting Your Devices
+## Option 1: GitHub Cloud Auto-Sync (Recommended & Easiest)
 
-You can connect your devices in two ways:
+With GitHub Auto-Sync, every sale and product change is automatically committed and pushed to your GitHub repository. Any other computer or iPad opening the POS will automatically pull the newest data.
 
-### Option A: Direct Connection in the POS App (No Coding / Works Locally)
-1. Open [`index.html`](index.html) in your browser on PC 1.
-2. Click **Cloud Sync** at the top right of the header.
-3. Paste your **Supabase Project URL** and **Anon Key**.
-4. Make sure **"Direct Store Sync"** is checked.
-5. Click **Save & Connect Cloud**.
-6. **On PC 2, iPad, or Phone**: Open the POS, click **Cloud Sync**, paste the exact same URL & Key, and click **Save & Connect Cloud**.
+### 30-Second Setup:
+1. Open the POS and click the **GitHub: Connect** button in the top header.
+2. Enter your repository (e.g. `your-username/goldenblossomboutique-pos` or paste your full GitHub URL).
+3. Click the link **"Generate Token (1 Click)"** (or go to [GitHub Tokens](https://github.com/settings/tokens/new?scopes=repo&description=Golden-Blossom-POS-Sync)).
+4. Click **Generate token** on GitHub, copy the token (`ghp_...`), and paste it into the POS.
+5. Click **Save & Connect GitHub**.
 
-That's it! When you add or edit a product or make a sale on one device, all other devices receive the update in real-time!
+### What Happens Automatically:
+- **Auto-Save**: Whenever you add a caftan, update prices, or ring up a sale, the POS commits and saves both `data.json` and `data.js` to GitHub in the background.
+- **Auto-Pull**: When you open the POS on any computer, it automatically pulls the latest inventory from GitHub so you're always up to date.
+- **Manual Buttons**: You can click **Pull from GitHub** or **Push to GitHub** at any time.
 
 ---
 
-### Option B: Deploy Online with Vercel (Recommended for Best Experience)
-If you host your POS online on Vercel:
-1. Push your repository to GitHub.
-2. Import the repository into [Vercel](https://vercel.com).
-3. In Vercel, go to **Settings > Environment Variables** and add:
-   - `SUPABASE_URL`: Your Supabase Project URL
-   - `SUPABASE_ANON_KEY`: Your Supabase anon key
-4. Deploy!
-5. Now every phone, tablet, and PC can visit your Vercel link (e.g., `https://goldenblossom.vercel.app`) without typing credentials, and everyone shares the same live inventory and gets code updates automatically.
+## Option 2: Supabase Cloud Database (Live Multi-PC Sync)
+
+If you have multiple registers open at the same time and want changes to reflect on all screens in real-time without refreshing:
+
+### 1-Minute Setup:
+1. Go to [Supabase](https://supabase.com) and create a free project.
+2. In Supabase, open the **SQL Editor**, paste the contents of `supabase-schema.sql`, and click **Run**:
+   ```sql
+   create table if not exists public.gbb_shared_data (
+     id smallint primary key default 1 check (id = 1),
+     payload jsonb not null,
+     updated_at timestamptz not null default now()
+   );
+   alter table public.gbb_shared_data enable row level security;
+   grant select, insert, update on public.gbb_shared_data to anon, authenticated;
+   create policy "Allow POS read access" on public.gbb_shared_data for select using (true);
+   create policy "Allow POS upsert access" on public.gbb_shared_data for all using (true) with check (true);
+   ```
+3. In Supabase, go to **Project Settings > API** and copy:
+   - **Project URL** (e.g. `https://xxxx.supabase.co`)
+   - **Project API Key (anon / public)**
+4. In the POS header, click **Cloud DB**, switch to the **Supabase Cloud DB** tab, paste your URL and Anon Key, and click **Connect & Sync Supabase**.
+
+That's it! No complex user metadata or Vercel environment variables required.
+
+---
+
+## Option 3: Local Desktop App (Electron)
+
+If running the desktop application with `npm start`:
+- Changes are automatically written directly to `data.js` and `data.json` inside this folder.
+- If a local Git repository is initialized, you can also push to GitHub directly from the terminal or using the desktop sync button.
