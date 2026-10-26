@@ -1,6 +1,6 @@
 {
   "version": "2.0.0",
-  "updatedAt": "2026-10-26T15:35:55.756Z",
+  "updatedAt": "2026-10-26T15:36:12.129Z",
   "categories": [
     {
       "id": "Clothes",
@@ -34,7 +34,7 @@
       "title": "necklace",
       "category": "Jewelry",
       "price": 600,
-      "stock": 1,
+      "stock": 0,
       "image": "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=400"
     },
     {
@@ -42,7 +42,7 @@
       "title": "earings",
       "category": "Jewelry",
       "price": 400,
-      "stock": 1,
+      "stock": 0,
       "image": "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=400"
     }
   ],
@@ -66,5 +66,38 @@
       "title": "Sales Associate"
     }
   ],
-  "salesHistory": []
+  "salesHistory": [
+    {
+      "id": "INV-28972129",
+      "date": "10/26/2026",
+      "time": "04:36 PM",
+      "staff": "Summer (owner)",
+      "items": [
+        {
+          "id": "GBB-JEW-72119",
+          "title": "earings",
+          "category": "Jewelry",
+          "price": 400,
+          "stock": 1,
+          "image": "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=400",
+          "qty": 1
+        },
+        {
+          "id": "GBB-JEW-70202",
+          "title": "necklace",
+          "category": "Jewelry",
+          "price": 600,
+          "stock": 1,
+          "image": "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=400",
+          "qty": 1
+        }
+      ],
+      "subtotal": 1000,
+      "discountPct": 35,
+      "grandTotal": 650,
+      "paymentMethod": "Cash",
+      "tendered": 200,
+      "changeDue": 0
+    }
+  ]
 }
