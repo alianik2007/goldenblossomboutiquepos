@@ -1,6 +1,6 @@
 window.GBB_DATA = {
   "version": "2.0.0",
-  "updatedAt": "2026-10-26T16:51:53.667Z",
+  "updatedAt": "2026-10-26T16:51:59.511Z",
   "categories": [
     {
       "id": "Clothes",
@@ -33,7 +33,7 @@ window.GBB_DATA = {
       "id": "GBB-JEW-78551",
       "image": "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=400",
       "price": 450,
-      "stock": 1,
+      "stock": 0,
       "title": "GBB-SCV-00101",
       "category": "Jewelry"
     }
@@ -59,6 +59,29 @@ window.GBB_DATA = {
     }
   ],
   "salesHistory": [
+    {
+      "id": "INV-33519510",
+      "date": "10/26/2026",
+      "time": "05:51 PM",
+      "staff": "Summer (owner)",
+      "items": [
+        {
+          "id": "GBB-JEW-78551",
+          "image": "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=400",
+          "price": 450,
+          "stock": 1,
+          "title": "GBB-SCV-00101",
+          "category": "Jewelry",
+          "qty": 1
+        }
+      ],
+      "subtotal": 450,
+      "discountPct": 0,
+      "grandTotal": 450,
+      "paymentMethod": "Card",
+      "tendered": 450,
+      "changeDue": 0
+    },
     {
       "id": "INV-33473082",
       "date": "10/26/2026",
