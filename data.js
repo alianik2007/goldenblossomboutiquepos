@@ -1,6 +1,6 @@
 window.GBB_DATA = {
   "version": "2.0.0",
-  "updatedAt": "2026-10-26T16:43:21.363Z",
+  "updatedAt": "2026-10-26T16:44:30.679Z",
   "categories": [
     {
       "id": "Clothes",
