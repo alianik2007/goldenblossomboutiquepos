@@ -1,6 +1,6 @@
 {
   "version": "2.0.0",
-  "updatedAt": "2026-10-26T16:51:13.085Z",
+  "updatedAt": "2026-10-26T16:51:53.667Z",
   "categories": [
     {
       "id": "Clothes",
@@ -33,7 +33,7 @@
       "id": "GBB-JEW-78551",
       "image": "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=400",
       "price": 450,
-      "stock": 0,
+      "stock": 1,
       "title": "GBB-SCV-00101",
       "category": "Jewelry"
     }
