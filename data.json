@@ -1,67 +1,67 @@
 {
   "version": "2.0.0",
-  "updatedAt": "2026-10-26T15:36:12.129Z",
+  "updatedAt": "2026-10-26T15:37:49.543Z",
   "categories": [
     {
       "id": "Clothes",
-      "name": "Clothes (Caftans & Dresses)",
-      "icon": "👗"
+      "icon": "👗",
+      "name": "Clothes (Caftans & Dresses)"
     },
     {
       "id": "Scarves",
-      "name": "Scarves (Silk & Shawls)",
-      "icon": "🧣"
+      "icon": "🧣",
+      "name": "Scarves (Silk & Shawls)"
     },
     {
       "id": "Jewelry",
-      "name": "Jewelry (Luxury Jewelry)",
-      "icon": "✨"
+      "icon": "✨",
+      "name": "Jewelry (Luxury Jewelry)"
     },
     {
       "id": "Boots",
-      "name": "Boots & Shoes",
-      "icon": "👢"
+      "icon": "👢",
+      "name": "Boots & Shoes"
     },
     {
       "id": "Accessories",
-      "name": "Accessories (Bags & Belts)",
-      "icon": "👜"
+      "icon": "👜",
+      "name": "Accessories (Bags & Belts)"
     }
   ],
   "products": [
     {
       "id": "GBB-JEW-70202",
-      "title": "necklace",
-      "category": "Jewelry",
+      "image": "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=400",
       "price": 600,
       "stock": 0,
-      "image": "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=400"
+      "title": "necklace",
+      "category": "Jewelry"
     },
     {
       "id": "GBB-JEW-72119",
-      "title": "earings",
-      "category": "Jewelry",
+      "image": "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=400",
       "price": 400,
       "stock": 0,
-      "image": "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=400"
+      "title": "earings",
+      "category": "Jewelry"
     }
   ],
   "staffList": [
     {
-      "name": "Summer",
       "pin": "0000",
+      "name": "Summer",
       "role": "owner",
       "title": "Boutique Owner"
     },
     {
-      "name": "Khadija (Manager)",
       "pin": "1234",
+      "name": "Khadija (Manager)",
       "role": "manager",
       "title": "Store Manager"
     },
     {
-      "name": "Youssef",
       "pin": "5678",
+      "name": "Youssef",
       "role": "cashier",
       "title": "Sales Associate"
     }
@@ -71,33 +71,33 @@
       "id": "INV-28972129",
       "date": "10/26/2026",
       "time": "04:36 PM",
-      "staff": "Summer (owner)",
       "items": [
         {
           "id": "GBB-JEW-72119",
-          "title": "earings",
-          "category": "Jewelry",
+          "qty": 1,
+          "image": "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=400",
           "price": 400,
           "stock": 1,
-          "image": "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=400",
-          "qty": 1
+          "title": "earings",
+          "category": "Jewelry"
         },
         {
           "id": "GBB-JEW-70202",
-          "title": "necklace",
-          "category": "Jewelry",
+          "qty": 1,
+          "image": "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=400",
           "price": 600,
           "stock": 1,
-          "image": "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=400",
-          "qty": 1
+          "title": "necklace",
+          "category": "Jewelry"
         }
       ],
+      "staff": "Summer (owner)",
       "subtotal": 1000,
-      "discountPct": 35,
-      "grandTotal": 650,
-      "paymentMethod": "Cash",
       "tendered": 200,
-      "changeDue": 0
+      "changeDue": 0,
+      "grandTotal": 650,
+      "discountPct": 35,
+      "paymentMethod": "Cash"
     }
   ]
 }
