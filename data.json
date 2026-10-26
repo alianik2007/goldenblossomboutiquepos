@@ -1,6 +1,6 @@
 {
   "version": "2.0.0",
-  "updatedAt": "2026-10-26T15:34:57.730Z",
+  "updatedAt": "2026-10-26T15:35:43.447Z",
   "categories": [
     {
       "id": "Clothes",
@@ -28,7 +28,16 @@
       "icon": "👜"
     }
   ],
-  "products": [],
+  "products": [
+    {
+      "id": "GBB-JEW-70202",
+      "title": "necklace",
+      "category": "Jewelry",
+      "price": 600,
+      "stock": 1,
+      "image": "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=400"
+    }
+  ],
   "staffList": [
     {
       "name": "Summer",
